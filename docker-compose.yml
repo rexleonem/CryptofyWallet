@@ -1,0 +1,19 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: cryptofy
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+
+  redis:
+    image: redis:7-alpine
+
+  nestjs:
+    build: ./backend
+    ports: ['3000:3000']
+    depends_on: [postgres, redis]
+
+  fastapi:
+    build: ./python
+    ports: ['8000:8000']
+    depends_on: [redis]
