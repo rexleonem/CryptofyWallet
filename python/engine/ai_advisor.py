@@ -1,4 +1,9 @@
-import openai
+import os
+import google.generativeai as genai
+
+# Setup Gemini using the provided API key or environment variable
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "AIzaSyAYrNNIbJ0TF3SPjakZypVZLdQnKcxVU5o")
+genai.configure(api_key=GEMINI_API_KEY)
 
 def format_portfolio(portfolio: dict) -> str:
     tokens = portfolio.get('tokens', [])
@@ -27,14 +32,19 @@ Rules:
 """
 
 async def chat(user_message: str, portfolio: dict, risk: dict) -> str:
-    client = openai.AsyncOpenAI()
-    response = await client.chat.completions.create(
-        model='gpt-4o',
-        messages=[
-            {'role': 'system', 'content': build_system_prompt(portfolio, risk)},
-            {'role': 'user', 'content': user_message}
-        ],
-        temperature=0.4,
-        max_tokens=600
+    system_instruction = build_system_prompt(portfolio, risk)
+    
+    # We use gemini-1.5-pro or gemini-1.5-flash
+    model = genai.GenerativeModel(
+        model_name='gemini-1.5-pro',
+        system_instruction=system_instruction
     )
-    return response.choices[0].message.content
+    
+    response = await model.generate_content_async(
+        user_message,
+        generation_config=genai.types.GenerationConfig(
+            temperature=0.4,
+            max_output_tokens=600,
+        )
+    )
+    return response.text

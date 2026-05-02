@@ -24,7 +24,7 @@ Cryptofy is not just a crypto wallet. It is not just a portfolio tracker. It is 
 | **dApp Connect** | WalletConnect v2 |
 | **Market Data** | CoinGecko API |
 | **Node Backend** | NestJS (TypeScript) |
-| **AI Engine** | FastAPI (Python) + OpenAI GPT-4o |
+| **AI Engine** | FastAPI (Python) + Google Gemini 1.5 Pro |
 | **Database** | PostgreSQL + Redis |
 | **Push Notifications** | Firebase Cloud Messaging |
 | **Infrastructure** | Docker + GitHub Actions + AWS/GCP |
@@ -53,7 +53,7 @@ CryptofyWallet/
 │       ├── portfolio/      ← Snapshot storage
 │       └── ai/             ← Proxy to Python AI engine
 ├── python/                 ← FastAPI AI Engine
-│   ├── engine/             ← Risk scoring & OpenAI integration
+│   ├── engine/             ← Risk scoring & Gemini integration
 │   ├── routers/            ← FastAPI endpoints
 │   └── main.py             
 ├── docker-compose.yml      ← Full stack local orchestration
@@ -67,7 +67,7 @@ CryptofyWallet/
 ### 1. Prerequisites
 - **Node.js:** v20+
 - **Mobile Environment:** Android Studio (JDK 17) or Xcode
-- **External APIs:** Alchemy API Key, OpenAI API Key, CoinGecko API Key
+- **External APIs:** Alchemy API Key, Gemini API Key, CoinGecko API Key
 
 ### 2. Run the Full Stack Locally
 The project utilizes Docker to run the backend dependencies locally.
@@ -116,7 +116,7 @@ API_BASE_URL=http://localhost:3000
 
 **NestJS / Python Backends (`.env`):**
 ```env
-OPENAI_API_KEY=your_openai_key
+GEMINI_API_KEY=your_gemini_key
 COINGECKO_API_KEY=your_coingecko_key
 DATABASE_URL=postgresql://user:password@localhost:5432/cryptofy
 REDIS_URL=redis://localhost:6379
@@ -131,7 +131,7 @@ JWT_SECRET=your_jwt_secret
 - **Phase 2 (Transactions):** ETH transfers, Gas estimation, History aggregation, and WalletConnect integration.
 - **Phase 3 (Portfolio Tracking):** CoinGecko price integration, Postgres schema, Redis caching, and dynamic UI charts.
 - **Phase 4 (AI Brain Core):** Python rule-based risk engine to detect concentration risk and volatility. 
-- **Phase 5 (AI Advisor):** OpenAI GPT-4o context injection to allow users to ask "Is my portfolio risky?" and get real-time on-chain analysis.
+- **Phase 5 (AI Advisor):** Google Gemini context injection to allow users to ask "Is my portfolio risky?" and get real-time on-chain analysis.
 
 ### Investor Demo Target
 By the end of Phase 5, the application will provide a fully functional wallet mapped to a conversational AI that interprets real on-chain assets. 
