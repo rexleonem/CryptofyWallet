@@ -1,97 +1,137 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# Cryptofy Wallet 🧠💼
 
-# Getting Started
+Cryptofy is not just a crypto wallet. It is not just a portfolio tracker. It is a **financial decision system** powered by on-chain truth and AI interpretation.
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+### Core Philosophy
+- **Layer 1:** A self-custodial crypto wallet (user owns keys, always).
+- **Layer 2:** A live portfolio intelligence engine (on-chain + market data).
+- **Layer 3:** An AI advisor that interprets data in plain language.
+- **Rule:** The wallet layer must stay simple and secure. The AI layer can evolve infinitely.
 
-## Step 1: Start Metro
+---
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+## 🏗️ Technology Stack
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+| Layer | Technology |
+|---|---|
+| **Mobile App** | React Native CLI + TypeScript |
+| **State Management** | Zustand + React Query |
+| **Navigation** | React Navigation v6 |
+| **Animations** | React Native Reanimated 3 |
+| **Wallet Crypto** | ethers.js v6 |
+| **Key Storage** | react-native-keychain (Secure Enclave / Keystore) |
+| **Blockchain RPC** | Alchemy (primary) + Infura (fallback) |
+| **dApp Connect** | WalletConnect v2 |
+| **Market Data** | CoinGecko API |
+| **Node Backend** | NestJS (TypeScript) |
+| **AI Engine** | FastAPI (Python) + OpenAI GPT-4o |
+| **Database** | PostgreSQL + Redis |
+| **Push Notifications** | Firebase Cloud Messaging |
+| **Infrastructure** | Docker + GitHub Actions + AWS/GCP |
 
-```sh
-# Using npm
-npm start
+---
 
-# OR using Yarn
-yarn start
+## 📂 Folder Structure
+
+```text
+CryptofyWallet/
+├── src/                    ← Mobile App Root
+│   ├── app/                ← App entry, navigation root, providers
+│   ├── screens/            ← UI Screens (Onboarding, Dashboard, Wallet, AIAssistant)
+│   ├── components/         ← Reusable UI components & charts
+│   ├── wallet/             ← Core Wallet Crypto (bip39, keystore, signer)
+│   ├── blockchain/         ← RPC calls, Alchemy adapter
+│   ├── store/              ← Zustand stores (walletStore, portfolioStore)
+│   ├── api/                ← Backend API calls (Axios client)
+│   ├── types/              ← TypeScript interfaces
+│   ├── utils/              ← Formatters, helpers
+│   └── constants/          ← Chain config, token lists
+├── backend/                ← NestJS Backend API
+│   └── src/
+│       ├── auth/           ← Device-based auth
+│       ├── wallets/        ← Register public addresses
+│       ├── portfolio/      ← Snapshot storage
+│       └── ai/             ← Proxy to Python AI engine
+├── python/                 ← FastAPI AI Engine
+│   ├── engine/             ← Risk scoring & OpenAI integration
+│   ├── routers/            ← FastAPI endpoints
+│   └── main.py             
+├── docker-compose.yml      ← Full stack local orchestration
+└── package.json            ← React Native App Configuration
 ```
 
-## Step 2: Build and run your app
+---
 
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
+## 🚀 Setup & Installation
 
-### Android
+### 1. Prerequisites
+- **Node.js:** v20+
+- **Mobile Environment:** Android Studio (JDK 17) or Xcode
+- **External APIs:** Alchemy API Key, OpenAI API Key, CoinGecko API Key
 
-```sh
-# Using npm
-npm run android
+### 2. Run the Full Stack Locally
+The project utilizes Docker to run the backend dependencies locally.
 
-# OR using Yarn
-yarn android
+```bash
+# Start PostgreSQL, Redis, NestJS backend, and FastAPI AI engine
+docker-compose up -d
 ```
 
-### iOS
+### 3. Run the Mobile App
+Ensure dependencies are installed and an emulator is running.
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
+```bash
+# Install dependencies
+npm install
 
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
-
-```sh
-bundle install
-```
-
-Then, and every time you update your native dependencies, run:
-
-```sh
-bundle exec pod install
-```
-
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
-
-```sh
-# Using npm
+# For iOS (macOS only)
+cd ios && pod install && cd ..
+npm run start
 npm run ios
 
-# OR using Yarn
-yarn ios
+# For Android
+npm run start
+npm run android
 ```
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+---
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+## 🔐 Security Architecture (Non-Negotiable)
+1. **Never send private keys to the server:** All signing happens exclusively on-device. The server only receives signed transactions.
+2. **Hardware Encryption:** `react-native-keychain` is used to leverage iOS Secure Enclave / Android Keystore hardware encryption for the seed phrase.
+3. **No Key in State:** Mnemonics are retrieved from the keychain, used momentarily for signing, and immediately discarded from memory. State management (Zustand) only stores public addresses.
+4. **Pre-sign Simulation:** Every transaction runs an `eth_call` simulation prior to real execution.
 
-## Step 3: Modify your app
+---
 
-Now that you have successfully run the app, let's make changes!
+## 🛠️ Environmental Variables
+You will need a `.env` file at the root of the respective projects. NEVER commit these files.
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
+**Mobile App (`.env`):**
+```env
+ALCHEMY_API_KEY=your_alchemy_key
+WALLETCONNECT_PROJECT_ID=your_wc_id
+API_BASE_URL=http://localhost:3000
+```
 
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
+**NestJS / Python Backends (`.env`):**
+```env
+OPENAI_API_KEY=your_openai_key
+COINGECKO_API_KEY=your_coingecko_key
+DATABASE_URL=postgresql://user:password@localhost:5432/cryptofy
+REDIS_URL=redis://localhost:6379
+JWT_SECRET=your_jwt_secret
+```
 
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
+---
 
-## Congratulations! :tada:
+## 🗺️ Roadmap & Phases
 
-You've successfully run and modified your React Native App. :partying_face:
+- **Phase 1 (Wallet Core):** BIP-39 generation, Keystore hardware security, Address Derivation, and Alchemy balances. *(Status: Core Scaffolded)*
+- **Phase 2 (Transactions):** ETH transfers, Gas estimation, History aggregation, and WalletConnect integration.
+- **Phase 3 (Portfolio Tracking):** CoinGecko price integration, Postgres schema, Redis caching, and dynamic UI charts.
+- **Phase 4 (AI Brain Core):** Python rule-based risk engine to detect concentration risk and volatility. 
+- **Phase 5 (AI Advisor):** OpenAI GPT-4o context injection to allow users to ask "Is my portfolio risky?" and get real-time on-chain analysis.
 
-### Now what?
-
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
-
-# Troubleshooting
-
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+### Investor Demo Target
+By the end of Phase 5, the application will provide a fully functional wallet mapped to a conversational AI that interprets real on-chain assets. 
