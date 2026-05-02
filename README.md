@@ -118,7 +118,7 @@ API_BASE_URL=http://localhost:3000
 ```env
 GEMINI_API_KEY=your_gemini_key
 CMC_API_KEY=your_cmc_key
-DATABASE_URL=postgresql://neondb_owner:npg_EvuGaogUPO20@ep-shy-night-aninw1gj-pooler.c-6.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+DATABASE_URL=postgresql://postgres:password@localhost:5432/cryptofy
 REDIS_URL=redis://localhost:6379
 JWT_SECRET=your_jwt_secret
 ```
