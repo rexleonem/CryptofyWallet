@@ -28,14 +28,14 @@ export class BlockchainService {
   }
 
   async getGasPrice() {
-    return this.callWithRetry(() => this.provider.getFeeData());
+    return this.callWithRetry(() => this.getProvider().getFeeData());
   }
 
   async broadcastTransaction(signedTx: string) {
-    return this.callWithRetry(() => this.provider.broadcastTransaction(signedTx));
+    return this.callWithRetry(() => this.getProvider().broadcastTransaction(signedTx));
   }
 
   async getTransactionReceipt(hash: string) {
-    return this.callWithRetry(() => this.provider.getTransactionReceipt(hash));
+    return this.callWithRetry(() => this.getProvider().getTransactionReceipt(hash));
   }
 }
