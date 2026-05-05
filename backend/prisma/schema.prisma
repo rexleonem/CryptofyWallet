@@ -16,6 +16,7 @@ model User {
   email     String?  @unique
   name      String?
   wallets   Wallet[]
+  offers    Offer[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -40,4 +41,58 @@ model Portfolio {
   assets    Json?    // Array of assets { symbol: string, balance: number }
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+enum OfferType {
+  BUY
+  SELL
+}
+
+enum TradeStatus {
+  OPEN
+  LOCKED
+  PAID
+  COMPLETED
+  DISPUTED
+  CANCELLED
+}
+
+model Offer {
+  id             String    @id @default(uuid())
+  userId         String
+  user           User      @relation(fields: [userId], references: [id])
+  type           OfferType
+  asset          String    // e.g., "ETH", "USDT"
+  price          Float
+  minAmount      Float
+  maxAmount      Float
+  paymentMethods String[]
+  status         String    @default("ACTIVE")
+  trades         Trade[]
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+model Trade {
+  id            String      @id @default(uuid())
+  offerId       String
+  offer         Offer       @relation(fields: [offerId], references: [id])
+  buyerId       String
+  sellerId      String
+  amount        Float
+  status        TradeStatus @default(OPEN)
+  escrowTxHash  String?
+  disputes      Dispute[]
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+model Dispute {
+  id         String   @id @default(uuid())
+  tradeId    String
+  trade      Trade    @relation(fields: [tradeId], references: [id])
+  reason     String
+  status     String   @default("OPEN")
+  resolution String?
+  createdAt  DateTime @default(now())
 }
