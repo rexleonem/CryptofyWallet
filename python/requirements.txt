@@ -3,3 +3,8 @@ uvicorn
 httpx
 pydantic
 google-generativeai
+sqlalchemy
+psycopg2-binary
+python-dotenv
+alembic
+

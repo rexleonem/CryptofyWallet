@@ -1,0 +1,28 @@
+services:
+  # 1. NestJS Backend
+  - type: web
+    name: cryptofy-backend
+    runtime: docker
+    dockerContext: ./backend
+    dockerfilePath: ./backend/Dockerfile
+    envVars:
+      - key: DATABASE_URL
+        sync: false # Set this in Render Dashboard (Neon URL)
+      - key: REDIS_URL
+        sync: false # Optional: Set this if using Upstash or similar
+      - key: JWT_SECRET
+        generateValue: true
+      - key: PORT
+        value: 3000
+
+  # 2. Python AI Engine
+  - type: web
+    name: cryptofy-ai-brain
+    runtime: docker
+    dockerContext: ./python
+    dockerfilePath: ./python/Dockerfile
+    envVars:
+      - key: DATABASE_URL
+        sync: false # Set this in Render Dashboard (Neon URL)
+      - key: GEMINI_API_KEY
+        sync: false # Set this in Render Dashboard
