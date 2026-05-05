@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, RefreshControl, Clipboard, Alert, Image } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { useWalletStore } from '../../store/walletStore';
 import { COLORS, SPACING, TYPOGRAPHY } from '../../constants/Theme';
 import { apiClient } from '../../api/client';
 
 export default function DashboardScreen() {
+  const navigation = useNavigation<any>();
   const { address, setAddress, setUnlocked } = useWalletStore();
   const [balance, setBalance] = useState({ eth: '0.00', usd: '0.00' });
   const [refreshing, setRefreshing] = useState(false);
@@ -15,7 +17,7 @@ export default function DashboardScreen() {
       // We use the safe fetch wrapper I created earlier or apiClient if axios is installed
       // For now, let's assume we use the backend endpoint
       const response = await fetch(`http://localhost:3000/wallets/balance/${address}`);
-      const data = await response.json();
+      const data = (await response.json()) as { balance?: string; usd?: number };
       setBalance({
         eth: data.balance || '0.00',
         usd: data.usd?.toLocaleString() || '0.00'
