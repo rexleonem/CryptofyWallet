@@ -1,34 +1,76 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
+import { View, Text, StatusBar } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import { useWalletStore } from '../store/walletStore';
+import { COLORS } from '../constants/Theme';
 
-// Screen imports (Stubs)
+// Screen imports
+import SplashScreen from '../screens/Splash/SplashScreen';
 import OnboardingScreen from '../screens/Onboarding/OnboardingScreen';
+import CreateWalletScreen from '../screens/Wallet/CreateWalletScreen';
+import VerifyPhraseScreen from '../screens/Wallet/VerifyPhraseScreen';
+import ImportWalletScreen from '../screens/Wallet/ImportWalletScreen';
 import DashboardScreen from '../screens/Dashboard/DashboardScreen';
+import SendScreen from '../screens/Transactions/SendScreen';
+import ConfirmScreen from '../screens/Transactions/ConfirmScreen';
+import ReceiveScreen from '../screens/Transactions/ReceiveScreen';
+import HistoryScreen from '../screens/Transactions/HistoryScreen';
+import PortfolioHomeScreen from '../screens/Portfolio/PortfolioHomeScreen';
+import TokenDetailScreen from '../screens/Portfolio/TokenDetailScreen';
+import InsightsDetailScreen from '../screens/Insights/InsightsDetailScreen';
+import ChatScreen from '../screens/AI/ChatScreen';
+import SubscriptionScreen from '../screens/Subscription/SubscriptionScreen';
+import P2PMarketplace from '../screens/P2P/P2PMarketplace';
 
 const Stack = createNativeStackNavigator();
 const queryClient = new QueryClient();
 
 export default function App() {
-  const { address, isUnlocked } = useWalletStore();
+  try {
+    const { address, isUnlocked } = useWalletStore();
 
-  return (
-    <SafeAreaProvider>
-      <QueryClientProvider client={queryClient}>
-        <NavigationContainer>
-          <Stack.Navigator screenOptions={{ headerShown: false }}>
-            {(!address || !isUnlocked) ? (
+    return (
+      <SafeAreaProvider>
+        <QueryClientProvider client={queryClient}>
+          <StatusBar barStyle="light-content" backgroundColor={COLORS.background} />
+          <NavigationContainer>
+            <Stack.Navigator 
+              initialRouteName="Splash"
+              screenOptions={{ 
+                headerShown: false,
+                contentStyle: { backgroundColor: COLORS.background }
+              }}
+            >
+              <Stack.Screen name="Splash" component={SplashScreen} />
               <Stack.Screen name="Onboarding" component={OnboardingScreen} />
-            ) : (
+              <Stack.Screen name="CreateWallet" component={CreateWalletScreen} />
+              <Stack.Screen name="VerifyPhrase" component={VerifyPhraseScreen} />
+              <Stack.Screen name="ImportWallet" component={ImportWalletScreen} />
               <Stack.Screen name="Main" component={DashboardScreen} />
-            )}
-          </Stack.Navigator>
-        </NavigationContainer>
-      </QueryClientProvider>
-    </SafeAreaProvider>
-  );
+              <Stack.Screen name="Send" component={SendScreen} />
+              <Stack.Screen name="ConfirmTransaction" component={ConfirmScreen} />
+              <Stack.Screen name="Receive" component={ReceiveScreen} />
+              <Stack.Screen name="History" component={HistoryScreen} />
+              <Stack.Screen name="PortfolioHome" component={PortfolioHomeScreen} />
+              <Stack.Screen name="TokenDetail" component={TokenDetailScreen} />
+              <Stack.Screen name="InsightsDetail" component={InsightsDetailScreen} />
+              <Stack.Screen name="AIChat" component={ChatScreen} />
+              <Stack.Screen name="Subscription" component={SubscriptionScreen} />
+              <Stack.Screen name="P2PMarketplace" component={P2PMarketplace} />
+            </Stack.Navigator>
+          </NavigationContainer>
+        </QueryClientProvider>
+      </SafeAreaProvider>
+    );
+  } catch (error: any) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0B0F1A' }}>
+        <Text style={{ color: 'white' }}>App Error: {error?.message || 'Unknown error'}</Text>
+      </View>
+    );
+  }
 }

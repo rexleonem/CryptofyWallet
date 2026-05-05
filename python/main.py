@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from routers import chat, insights, p2p
-from . import models
-from .database import engine
+import models
+from database import engine
 
 models.Base.metadata.create_all(bind=engine)
 

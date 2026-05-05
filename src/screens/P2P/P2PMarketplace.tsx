@@ -18,7 +18,7 @@ interface Offer {
 const P2PMarketplace = () => {
   const [offers, setOffers] = useState<Offer[]>([]);
   const [loading, setLoading] = useState(true);
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
 
   useEffect(() => {
     fetchOffers();
@@ -26,10 +26,10 @@ const P2PMarketplace = () => {
 
   const fetchOffers = async () => {
     try {
-      // For demo, we use the local API URL. In production, this would be the Render URL.
-      const response = await fetch('http://localhost:3000/p2p/offers');
+      const baseUrl = (typeof process !== 'undefined' && process.env?.API_BASE_URL) || 'http://localhost:3000';
+      const response = await fetch(`${baseUrl}/p2p/offers`);
       const data = await response.json();
-      setOffers(data);
+      setOffers(data as Offer[]);
     } catch (error) {
       console.error('Error fetching offers:', error);
     } finally {
@@ -40,7 +40,7 @@ const P2PMarketplace = () => {
   const renderOffer = ({ item }: { item: Offer }) => (
     <TouchableOpacity 
       style={styles.offerCard}
-      onPress={() => navigation.navigate('TradeDetails' as never, { offer: item } as never)}
+      onPress={() => navigation.navigate('TradeDetails', { offer: item })}
     >
       <View style={styles.offerHeader}>
         <Text style={[styles.typeBadge, item.type === 'SELL' ? styles.sellBadge : styles.buyBadge]}>

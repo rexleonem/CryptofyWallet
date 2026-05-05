@@ -15,6 +15,7 @@ model User {
   id        String   @id @default(uuid())
   email     String?  @unique
   name      String?
+  plan      String   @default("FREE") // FREE, PRO, ELITE
   wallets   Wallet[]
   offers    Offer[]
   createdAt DateTime @default(now())

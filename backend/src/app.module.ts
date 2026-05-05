@@ -5,6 +5,8 @@ import { PortfolioModule } from './portfolio/portfolio.module';
 import { AiModule } from './ai/ai.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { P2pModule } from './p2p/p2p.module';
+import { BlockchainModule } from './blockchain/blockchain.module';
+import { TransactionModule } from './transaction/transaction.module';
 
 @Module({
   imports: [
@@ -14,6 +16,8 @@ import { P2pModule } from './p2p/p2p.module';
     AiModule,
     PrismaModule,
     P2pModule,
+    BlockchainModule,
+    TransactionModule,
   ],
 })
 export class AppModule {}

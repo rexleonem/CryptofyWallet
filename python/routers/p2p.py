@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from typing import List
-from ..engine.ai_advisor import get_p2p_price_suggestion, analyze_trade_risk
+from engine.ai_advisor import get_p2p_price_suggestion, analyze_trade_risk
 
 router = APIRouter()
 
