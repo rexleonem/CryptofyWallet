@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ActivityIndicator, Alert } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ActivityIndicator, Alert, Animated } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useWalletStore } from '../../store/walletStore';
 import { retrieveMnemonic } from '../../wallet/keystore';
-import { getSignerFromMnemonic } from '../../wallet/signer';
+import { deriveWalletFromMnemonic } from '../../wallet/signer';
 import { COLORS, SPACING, TYPOGRAPHY } from '../../constants/Theme';
 import { ethers } from 'ethers';
+import { ALCHEMY_URL } from '../../constants/chains';
 
 export default function ConfirmScreen() {
   const navigation = useNavigation<any>();
@@ -15,6 +16,8 @@ export default function ConfirmScreen() {
 
   const [countdown, setCountdown] = useState(3);
   const [isSending, setIsSending] = useState(false);
+  const [isPressing, setIsPressing] = useState(false);
+  const progress = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (countdown > 0) {
@@ -22,35 +25,6 @@ export default function ConfirmScreen() {
       return () => clearTimeout(timer);
     }
   }, [countdown]);
-
-  const handleConfirm = async () => {
-    setIsSending(true);
-    try {
-      const mnemonic = await retrieveMnemonic();
-      if (!mnemonic) throw new Error('Wallet not found');
-
-      const signer = getSignerFromMnemonic(mnemonic);
-      
-      // Build and send transaction
-      const tx = await signer.sendTransaction({
-        to: recipient,
-        value: ethers.parseEther(amount),
-      });
-
-      Alert.alert(
-        'Success', 
-        'Transaction broadcasted! Check history for status.',
-        [{ text: 'OK', onPress: () => navigation.navigate('Main') }]
-      );
-    } catch (error: any) {
-      Alert.alert('Transaction Failed', error.message || 'Unknown error');
-    } finally {
-      setIsSending(false);
-    }
-  };
-
-  const [isPressing, setIsPressing] = useState(false);
-  const progress = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (isPressing && countdown === 0) {
@@ -77,6 +51,33 @@ export default function ConfirmScreen() {
     outputRange: ['0%', '100%'],
   });
 
+  const handleConfirm = async () => {
+    setIsSending(true);
+    try {
+      const mnemonic = await retrieveMnemonic();
+      if (!mnemonic) throw new Error('Wallet not found');
+
+      const wallet = deriveWalletFromMnemonic(mnemonic);
+      const provider = new ethers.JsonRpcProvider(ALCHEMY_URL);
+      const signer = wallet.connect(provider);
+
+      const tx = await signer.sendTransaction({
+        to: recipient,
+        value: ethers.parseEther(amount),
+      });
+
+      Alert.alert(
+        'Success',
+        'Transaction broadcasted! Check history for status.',
+        [{ text: 'OK', onPress: () => navigation.navigate('Main') }]
+      );
+    } catch (error: any) {
+      Alert.alert('Transaction Failed', error.message || 'Unknown error');
+    } finally {
+      setIsSending(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -85,7 +86,7 @@ export default function ConfirmScreen() {
 
       <View style={styles.warningBox}>
         <Text style={styles.warningText}>
-          ⚠️ Double-check recipient address. Transactions cannot be reversed.
+          Double-check recipient address. Transactions cannot be reversed.
         </Text>
       </View>
 
@@ -98,7 +99,7 @@ export default function ConfirmScreen() {
           <Text style={styles.label}>To:</Text>
           <Text style={styles.value} numberOfLines={1} ellipsizeMode="middle">{recipient}</Text>
         </View>
-        
+
         <View style={styles.divider} />
 
         <View style={styles.amountRow}>
@@ -109,7 +110,7 @@ export default function ConfirmScreen() {
           <Text style={styles.amountLabel}>Network Fee</Text>
           <Text style={styles.amountValue}>{gasFee} ETH</Text>
         </View>
-        
+
         <View style={styles.totalRow}>
           <Text style={styles.totalLabel}>Total</Text>
           <Text style={styles.totalValue}>
@@ -120,7 +121,7 @@ export default function ConfirmScreen() {
 
       <View style={styles.footer}>
         <View style={[styles.button, countdown > 0 && styles.disabledButton]}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={StyleSheet.absoluteFill}
             onPressIn={() => setIsPressing(true)}
             onPressOut={() => setIsPressing(false)}
@@ -138,8 +139,8 @@ export default function ConfirmScreen() {
             </View>
           </TouchableOpacity>
         </View>
-        
-        <TouchableOpacity 
+
+        <TouchableOpacity
           style={styles.cancelButton}
           onPress={() => navigation.goBack()}
           disabled={isSending}
