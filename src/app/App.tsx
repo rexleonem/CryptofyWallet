@@ -66,10 +66,11 @@ export default function App() {
         </QueryClientProvider>
       </SafeAreaProvider>
     );
-  } catch (error: any) {
+  } catch (error) {
+    const err = error as any;
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0B0F1A' }}>
-        <Text style={{ color: 'white' }}>App Error: {error?.message || 'Unknown error'}</Text>
+        <Text style={{ color: 'white' }}>App Error: {err?.message || 'Unknown error'}</Text>
       </View>
     );
   }

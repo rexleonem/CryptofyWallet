@@ -17,7 +17,8 @@ export default function DashboardScreen() {
       // We use the safe fetch wrapper I created earlier or apiClient if axios is installed
       // For now, let's assume we use the backend endpoint
       const response = await fetch(`http://localhost:3000/wallets/balance/${address}`);
-      const data = (await response.json()) as { balance?: string; usd?: number };
+      const jsonData = await response.json();
+      const data = jsonData as { balance?: string; usd?: number };
       setBalance({
         eth: data.balance || '0.00',
         usd: data.usd?.toLocaleString() || '0.00'
