@@ -10,7 +10,7 @@ export default function OnboardingScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.topSection}>
         <Image 
-          source={require('../../../assets/cfywallet-logo-white.png')} 
+          source={require('../../assets/cfywallet-logo-white.png')} 
           style={styles.logo}
           resizeMode="contain"
         />

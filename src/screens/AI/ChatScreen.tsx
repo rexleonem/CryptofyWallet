@@ -41,7 +41,7 @@ export default function ChatScreen() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ address, message: text })
       });
-      const data = await response.json();
+      const data = await response.json() as any;
       
       const aiMsg = { 
         id: (Date.now() + 1).toString(), 

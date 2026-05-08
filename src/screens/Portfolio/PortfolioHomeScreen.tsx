@@ -31,11 +31,11 @@ export default function PortfolioHomeScreen() {
       ]);
       
       const summary = await summaryRes.json();
-      const hist = await historyRes.json();
-      const ai = await aiRes.json();
+      const hist = await historyRes.json() as any;
+      const ai = await aiRes.json() as any;
       
       setPortfolio(summary);
-      setHistory(hist.map((h: any) => h.value));
+      setHistory((hist as any[]).map((h: any) => h.value));
       setAiInsight(ai.insights?.[0] || null);
     } catch (error) {
       console.error('Portfolio Fetch Error:', error);

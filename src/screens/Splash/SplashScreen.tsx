@@ -34,7 +34,7 @@ export default function SplashScreen() {
   return (
     <View style={styles.container}>
       <Image 
-        source={require('../../../assets/cfywallet-logo-white.png')} 
+        source={require('../../assets/cfywallet-logo-white.png')} 
         style={styles.logo}
         resizeMode="contain"
       />

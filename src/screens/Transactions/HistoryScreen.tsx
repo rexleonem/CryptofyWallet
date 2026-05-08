@@ -15,7 +15,7 @@ export default function HistoryScreen() {
     try {
       const response = await fetch(`http://localhost:3000/transaction/history/${address}`);
       const data = await response.json();
-      setHistory(data);
+      setHistory(data as any[]);
     } catch (error) {
       console.error('History Fetch Error:', error);
     } finally {

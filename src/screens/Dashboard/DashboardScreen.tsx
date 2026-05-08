@@ -57,7 +57,7 @@ export default function DashboardScreen() {
       >
         <View style={styles.header}>
           <Image 
-            source={require('../../../assets/cfywallet-logo-white.png')} 
+            source={require('../../assets/cfywallet-logo-white.png')} 
             style={styles.headerLogo}
             resizeMode="contain"
           />
