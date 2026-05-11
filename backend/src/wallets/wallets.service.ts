@@ -1,11 +1,12 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { ethers } from 'ethers';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class WalletsService {
   private provider: ethers.JsonRpcProvider;
 
-  constructor() {
+  constructor(private prisma: PrismaService) {
     const apiKey = process.env.ALCHEMY_API_KEY || '3xqHZz7DfKWBhtl4NHhQM';
     const rpcUrl = `https://eth-mainnet.g.alchemy.com/v2/${apiKey}`;
     this.provider = new ethers.JsonRpcProvider(rpcUrl);
@@ -20,8 +21,6 @@ export class WalletsService {
       const balanceWei = await this.provider.getBalance(address);
       const balanceEth = ethers.formatEther(balanceWei);
       
-      // For demo purposes, we'll use a hardcoded price of ETH. 
-      // In Stage 3, we will integrate CoinMarketCap API.
       const ethPrice = 2500; 
       const balanceUsd = parseFloat(balanceEth) * ethPrice;
 
@@ -36,5 +35,22 @@ export class WalletsService {
         usd: 0,
       };
     }
+  }
+
+  async createWallet(userId: string, address: string, label: string, network = 'ethereum') {
+    return this.prisma.wallet.create({
+      data: {
+        userId,
+        address,
+        label,
+        network,
+      },
+    });
+  }
+
+  async findByUserId(userId: string) {
+    return this.prisma.wallet.findMany({
+      where: { userId },
+    });
   }
 }
