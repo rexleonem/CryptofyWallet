@@ -10,11 +10,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     }
     
     super({
-      datasources: {
-        db: {
-          url: url || '',
-        },
-      },
+      datasourceUrl: url || '',
     } as any);
   }
 
