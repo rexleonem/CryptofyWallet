@@ -14,17 +14,14 @@ import OnboardingScreen from '../screens/Onboarding/OnboardingScreen';
 import CreateWalletScreen from '../screens/Wallet/CreateWalletScreen';
 import VerifyPhraseScreen from '../screens/Wallet/VerifyPhraseScreen';
 import ImportWalletScreen from '../screens/Wallet/ImportWalletScreen';
-import DashboardScreen from '../screens/Dashboard/DashboardScreen';
+import MainTabNavigator from '../navigation/MainTabNavigator';
 import SendScreen from '../screens/Transactions/SendScreen';
 import ConfirmScreen from '../screens/Transactions/ConfirmScreen';
 import ReceiveScreen from '../screens/Transactions/ReceiveScreen';
 import HistoryScreen from '../screens/Transactions/HistoryScreen';
-import PortfolioHomeScreen from '../screens/Portfolio/PortfolioHomeScreen';
 import TokenDetailScreen from '../screens/Portfolio/TokenDetailScreen';
 import InsightsDetailScreen from '../screens/Insights/InsightsDetailScreen';
-import ChatScreen from '../screens/AI/ChatScreen';
 import SubscriptionScreen from '../screens/Subscription/SubscriptionScreen';
-import P2PMarketplace from '../screens/P2P/P2PMarketplace';
 
 const Stack = createNativeStackNavigator();
 const queryClient = new QueryClient();
@@ -50,17 +47,14 @@ export default function App() {
               <Stack.Screen name="CreateWallet" component={CreateWalletScreen} />
               <Stack.Screen name="VerifyPhrase" component={VerifyPhraseScreen} />
               <Stack.Screen name="ImportWallet" component={ImportWalletScreen} />
-              <Stack.Screen name="Main" component={DashboardScreen} />
+              <Stack.Screen name="Main" component={MainTabNavigator} />
               <Stack.Screen name="Send" component={SendScreen} />
               <Stack.Screen name="ConfirmTransaction" component={ConfirmScreen} />
               <Stack.Screen name="Receive" component={ReceiveScreen} />
               <Stack.Screen name="History" component={HistoryScreen} />
-              <Stack.Screen name="PortfolioHome" component={PortfolioHomeScreen} />
               <Stack.Screen name="TokenDetail" component={TokenDetailScreen} />
               <Stack.Screen name="InsightsDetail" component={InsightsDetailScreen} />
-              <Stack.Screen name="AIChat" component={ChatScreen} />
               <Stack.Screen name="Subscription" component={SubscriptionScreen} />
-              <Stack.Screen name="P2PMarketplace" component={P2PMarketplace} />
             </Stack.Navigator>
           </NavigationContainer>
         </QueryClientProvider>

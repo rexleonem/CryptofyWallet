@@ -1,14 +1,33 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, RefreshControl, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  SafeAreaView, 
+  ScrollView, 
+  RefreshControl, 
+  TouchableOpacity, 
+  ActivityIndicator,
+  StatusBar
+} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useWalletStore } from '../../store/walletStore';
 import { COLORS, SPACING, TYPOGRAPHY } from '../../constants/Theme';
+import { CURRENCIES } from '../../constants/Currencies';
 import PortfolioChart from '../../components/PortfolioChart';
 import TokenRow from '../../components/TokenRow';
 import ProfitBadge from '../../components/ProfitBadge';
 import InsightStrip from '../../components/InsightStrip';
 import Skeleton from '../../components/Skeleton';
 import ChainSwitcher from '../../components/ChainSwitcher';
+import { 
+  TrendingUp, 
+  TrendingDown, 
+  Sparkles, 
+  Target, 
+  ArrowUpRight,
+  Filter
+} from 'lucide-react-native';
 
 export default function PortfolioHomeScreen() {
   const navigation = useNavigation<any>();
@@ -20,23 +39,29 @@ export default function PortfolioHomeScreen() {
   const [history, setHistory] = useState<number[]>([]);
   const [aiInsight, setAiInsight] = useState<any>(null);
   const [selectedChain, setSelectedChain] = useState('ETH');
+  const [timeFilter, setTimeFilter] = useState('7D');
 
   const fetchData = async () => {
     if (!address) return;
     try {
-      const [summaryRes, historyRes, aiRes] = await Promise.all([
-        fetch(`http://localhost:3000/portfolio/${address}`),
-        fetch(`http://localhost:3000/portfolio/history/${address}`),
-        fetch(`http://localhost:3000/ai/portfolio/${address}`)
-      ]);
+      // Mocking portfolio data
+      const mockSummary = {
+        totalValue: '4825.40',
+        change24h: 5.24,
+        tokens: [
+          { symbol: 'ETH', name: 'Ethereum', amount: '1.24', value: '3240.00', change24h: 3.2 },
+          { symbol: 'CFYC', name: 'Cryptofy Coin', amount: '1250.00', value: '125.00', change24h: 12.5 },
+          { symbol: 'CHUSD', name: 'Cherokee USD', amount: '100.00', value: '100.00', change24h: 0.1 },
+        ]
+      };
       
-      const summary = await summaryRes.json();
-      const hist = await historyRes.json() as any;
-      const ai = await aiRes.json() as any;
-      
-      setPortfolio(summary);
-      setHistory((hist as any[]).map((h: any) => h.value));
-      setAiInsight(ai.insights?.[0] || null);
+      setPortfolio(mockSummary);
+      setHistory([3000, 3100, 3050, 3200, 3400, 3350, 3450]);
+      setAiInsight({
+        title: 'Portfolio Diversification',
+        message: 'Your exposure to ETH is high. Consider diversifying into CFYC for potential high growth.',
+        severity: 'info'
+      });
     } catch (error) {
       console.error('Portfolio Fetch Error:', error);
     } finally {
@@ -57,22 +82,9 @@ export default function PortfolioHomeScreen() {
   if (loading && !refreshing) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.scrollContent}>
-          <View style={styles.header}>
-            <Skeleton width={120} height={30} />
-            <Skeleton width={60} height={20} />
-          </View>
-          <View style={{ alignItems: 'center', marginVertical: 40 }}>
-            <Skeleton width={200} height={50} />
-            <Skeleton width={100} height={20} style={{ marginTop: 10 }} />
-          </View>
-          <Skeleton width="100%" height={100} borderRadius={20} />
-          <Skeleton width="100%" height={200} style={{ marginTop: 30 }} />
-          <View style={{ marginTop: 30 }}>
-            <Skeleton width={100} height={25} />
-            <Skeleton width="100%" height={70} style={{ marginTop: 15 }} borderRadius={16} />
-            <Skeleton width="100%" height={70} style={{ marginTop: 10 }} borderRadius={16} />
-          </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text style={styles.loadingText}>Loading Portfolio...</Text>
         </View>
       </SafeAreaView>
     );
@@ -80,84 +92,90 @@ export default function PortfolioHomeScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="light-content" />
+      <View style={styles.header}>
+        <Text style={TYPOGRAPHY.h2}>Portfolio</Text>
+        <TouchableOpacity style={styles.filterButton}>
+          <Filter size={18} color={COLORS.textPrimary} />
+        </TouchableOpacity>
+      </View>
+
       <ScrollView 
         contentContainerStyle={styles.scrollContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />}
+        showsVerticalScrollIndicator={false}
       >
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Portfolio</Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <TouchableOpacity onPress={() => navigation.navigate('Subscription')} style={{ marginRight: 16 }}>
-              <Text style={[styles.headerAction, { color: '#A855F7' }]}>Go Pro</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => navigation.navigate('AIChat')} style={{ marginRight: 16 }}>
-              <Text style={[styles.headerAction, { color: COLORS.primary }]}>AI Assistant</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => navigation.navigate('Dashboard')}>
-               <Text style={styles.headerAction}>Wallet</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        <View style={styles.hero}>
-          <Text style={styles.totalValue}>${parseFloat(portfolio?.totalValue || '0').toLocaleString()}</Text>
+        <View style={styles.summaryCard}>
+          <Text style={styles.summaryLabel}>Net Worth</Text>
+          <Text style={styles.summaryValue}>${parseFloat(portfolio?.totalValue || '0').toLocaleString()}</Text>
           <View style={styles.performanceRow}>
-            <ProfitBadge percentage={portfolio?.change24h || 0} />
-            <Text style={styles.performancePeriod}> (24h)</Text>
+            <View style={[styles.badge, { backgroundColor: `${COLORS.success}15` }]}>
+              <TrendingUp size={14} color={COLORS.success} />
+              <Text style={[styles.badgeText, { color: COLORS.success }]}>+${portfolio?.change24h}%</Text>
+            </View>
+            <Text style={styles.performancePeriod}>last 24 hours</Text>
           </View>
         </View>
 
-        <ChainSwitcher selectedChain={selectedChain} onSelect={setSelectedChain} />
-
-        {aiInsight && (
-          <InsightStrip 
-            title={aiInsight.title}
-            message={aiInsight.message}
-            severity={aiInsight.severity}
-            onPress={() => navigation.navigate('InsightsDetail')}
-          />
-        )}
-
-        <View style={styles.insightStrip}>
-          <Text style={styles.insightText}>📊 Portfolio Health: <Text style={{fontWeight: 'bold', color: COLORS.success}}>Strong</Text></Text>
+        <View style={styles.chartSection}>
+          <View style={styles.chartHeader}>
+            <View style={styles.timeFilters}>
+              {['24H', '7D', '30D', '1Y', 'ALL'].map(f => (
+                <TouchableOpacity 
+                  key={f} 
+                  style={[styles.filterBtn, timeFilter === f && styles.activeFilter]}
+                  onPress={() => setTimeFilter(f)}
+                >
+                  <Text style={[styles.filterText, timeFilter === f && styles.activeFilterText]}>{f}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+          <PortfolioChart data={history.length > 0 ? history : [0, 0, 0]} />
         </View>
 
-        <PortfolioChart data={history.length > 0 ? history : [0, 0, 0]} />
-
-        <View style={styles.timeFilters}>
-          {['24H', '7D', '30D', '1Y'].map(f => (
-            <TouchableOpacity key={f} style={[styles.filterBtn, f === '7D' && styles.activeFilter]}>
-              <Text style={[styles.filterText, f === '7D' && styles.activeFilterText]}>{f}</Text>
+        <View style={styles.aiSection}>
+          <View style={styles.sectionHeaderRow}>
+            <Sparkles size={20} color={COLORS.accent} />
+            <Text style={styles.sectionTitle}>AI Insights</Text>
+          </View>
+          {aiInsight && (
+            <TouchableOpacity 
+              style={styles.insightCard}
+              onPress={() => navigation.navigate('InsightsDetail')}
+            >
+              <View style={styles.insightContent}>
+                <Text style={styles.insightTitle}>{aiInsight.title}</Text>
+                <Text style={styles.insightMessage}>{aiInsight.message}</Text>
+              </View>
+              <ArrowUpRight size={20} color={COLORS.textMuted} />
             </TouchableOpacity>
+          )}
+        </View>
+
+        <View style={styles.sectionHeaderRow}>
+          <Target size={20} color={COLORS.primary} />
+          <Text style={styles.sectionTitle}>Asset Allocation</Text>
+        </View>
+
+        <View style={styles.assetsList}>
+          {portfolio?.tokens.map((token: any, i: number) => (
+            <TokenRow 
+              key={i}
+              symbol={token.symbol}
+              name={token.name}
+              amount={token.amount}
+              value={token.value}
+              change24h={token.change24h}
+              onPress={() => navigation.navigate('TokenDetail', { token })}
+            />
           ))}
         </View>
-
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Assets</Text>
-        </View>
-
-        {portfolio?.tokens.map((token: any, i: number) => (
-          <TokenRow 
-            key={i}
-            symbol={token.symbol}
-            name={token.name}
-            amount={token.amount}
-            value={token.value}
-            change24h={token.change24h}
-            onPress={() => navigation.navigate('TokenDetail', { token })}
-          />
-        ))}
 
         {!portfolio?.tokens.length && (
           <View style={styles.emptyState}>
             <Text style={styles.emptyTitle}>No assets yet</Text>
             <Text style={styles.emptySubtitle}>Your portfolio will appear here once you receive crypto.</Text>
-            <TouchableOpacity 
-              style={styles.receiveBtn}
-              onPress={() => navigation.navigate('Receive')}
-            >
-              <Text style={styles.receiveBtnText}>Receive Crypto</Text>
-            </TouchableOpacity>
           </View>
         )}
       </ScrollView>
@@ -170,105 +188,158 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  loaderContainer: {
+  loadingContainer: {
     flex: 1,
-    backgroundColor: COLORS.background,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  scrollContent: {
-    padding: SPACING.l,
+  loadingText: {
+    ...TYPOGRAPHY.small,
+    marginTop: SPACING.m,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    paddingHorizontal: SPACING.l,
+    paddingVertical: SPACING.m,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  filterButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: COLORS.card,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  scrollContent: {
+    padding: SPACING.l,
+  },
+  summaryCard: {
     marginBottom: SPACING.xl,
   },
-  headerTitle: {
-    ...TYPOGRAPHY.h2,
+  summaryLabel: {
+    ...TYPOGRAPHY.label,
+    marginBottom: 4,
   },
-  headerAction: {
-    color: COLORS.primary,
-    fontWeight: 'bold',
-  },
-  hero: {
-    alignItems: 'center',
-    marginBottom: SPACING.m,
-  },
-  totalValue: {
+  summaryValue: {
     ...TYPOGRAPHY.balance,
+    fontSize: 36,
   },
   performanceRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: SPACING.s,
+    gap: 8,
+  },
+  badge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    gap: 4,
+  },
+  badgeText: {
+    fontSize: 12,
+    fontWeight: '700',
   },
   performancePeriod: {
-    color: COLORS.textSecondary,
-    fontSize: 12,
+    ...TYPOGRAPHY.small,
+    color: COLORS.textMuted,
   },
-  insightStrip: {
+  chartSection: {
     backgroundColor: COLORS.card,
-    borderRadius: 12,
-    padding: 12,
-    marginVertical: SPACING.m,
+    borderRadius: 24,
+    padding: SPACING.m,
+    marginBottom: SPACING.xl,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
-  insightText: {
-    color: COLORS.textPrimary,
-    fontSize: 14,
+  chartHeader: {
+    marginBottom: SPACING.m,
   },
   timeFilters: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: SPACING.xl,
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    borderRadius: 12,
+    padding: 4,
   },
   filterBtn: {
-    paddingHorizontal: 16,
+    flex: 1,
     paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    alignItems: 'center',
+    borderRadius: 10,
   },
   activeFilter: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.cardSecondary,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   filterText: {
-    color: COLORS.textSecondary,
-    fontSize: 12,
+    ...TYPOGRAPHY.small,
     fontWeight: '600',
+    color: COLORS.textMuted,
   },
   activeFilterText: {
-    color: 'white',
+    color: COLORS.textPrimary,
   },
-  sectionHeader: {
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     marginBottom: SPACING.m,
   },
   sectionTitle: {
-    ...TYPOGRAPHY.h2,
-    fontSize: 20,
+    ...TYPOGRAPHY.h3,
+    fontSize: 18,
+  },
+  aiSection: {
+    marginBottom: SPACING.xl,
+  },
+  insightCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: `${COLORS.primary}10`,
+    padding: SPACING.m,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: `${COLORS.primary}30`,
+  },
+  insightContent: {
+    flex: 1,
+    marginRight: SPACING.s,
+  },
+  insightTitle: {
+    ...TYPOGRAPHY.bodyBold,
+    fontSize: 15,
+    color: COLORS.primaryLight,
+    marginBottom: 4,
+  },
+  insightMessage: {
+    ...TYPOGRAPHY.small,
+    color: COLORS.textSecondary,
+  },
+  assetsList: {
+    gap: SPACING.s,
+    marginBottom: SPACING.xxl,
   },
   emptyState: {
-    marginTop: 40,
     alignItems: 'center',
     padding: SPACING.xl,
   },
   emptyTitle: {
-    ...TYPOGRAPHY.h2,
+    ...TYPOGRAPHY.h3,
     marginBottom: 8,
   },
   emptySubtitle: {
     ...TYPOGRAPHY.body,
     textAlign: 'center',
-    marginBottom: SPACING.xl,
-  },
-  receiveBtn: {
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 12,
-  },
-  receiveBtnText: {
-    color: 'white',
-    fontWeight: 'bold',
+    color: COLORS.textMuted,
   },
 });
