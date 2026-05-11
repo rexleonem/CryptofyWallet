@@ -10,11 +10,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     }
     
     super({
-      datasources: {
-        db: {
-          url: url || '', // Prisma 7 needs a non-empty string or it throws the initialization error
-        },
-      },
+      datasourceUrl: url || '', 
     });
   }
 
