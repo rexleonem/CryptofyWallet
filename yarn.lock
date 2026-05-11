@@ -1767,6 +1767,15 @@
     invariant "^2.2.4"
     nullthrows "^1.1.1"
 
+"@react-navigation/bottom-tabs@^7.16.0":
+  version "7.16.0"
+  resolved "https://registry.npmjs.org/@react-navigation/bottom-tabs/-/bottom-tabs-7.16.0.tgz#8309f993210d8a3c4e2dbd90e729921595ee678e"
+  integrity sha512-ShHaAR2mQxsSzL2kDRWfquomRsFfG+bm+UBRgu8D9ScbNBnnetzwOBestz/1DugVj89WtNapWJuHbMdgyCZEyQ==
+  dependencies:
+    "@react-navigation/elements" "^2.9.17"
+    color "^4.2.3"
+    sf-symbols-typescript "^2.1.0"
+
 "@react-navigation/core@^7.17.2":
   version "7.17.2"
   resolved "https://registry.npmjs.org/@react-navigation/core/-/core-7.17.2.tgz"
@@ -1785,6 +1794,15 @@
   version "2.9.15"
   resolved "https://registry.npmjs.org/@react-navigation/elements/-/elements-2.9.15.tgz"
   integrity sha512-cyz/pPiyyC6gaTVLsGFc1g0MYgrmuCFqklAWGXMWPscr5YU3ui94vPI4vnZwcsEy0T758TQWLzmS5XudZeRKcA==
+  dependencies:
+    color "^4.2.3"
+    use-latest-callback "^0.2.4"
+    use-sync-external-store "^1.5.0"
+
+"@react-navigation/elements@^2.9.17":
+  version "2.9.17"
+  resolved "https://registry.npmjs.org/@react-navigation/elements/-/elements-2.9.17.tgz#2ad61b9e7b5441ce9ae039b51cfc779515dd3256"
+  integrity sha512-Prax9RDS6l32npcl4PzvL88VoXe9HdtcIUP2+rim3DLVSZceD6oreA+cmPBUjeLFjsnxKlU3pTRby3RpYJ5/xw==
   dependencies:
     color "^4.2.3"
     use-latest-callback "^0.2.4"
@@ -4931,6 +4949,11 @@ lru-cache@^5.1.1:
   integrity sha512-KpNARQA3Iwv+jTA0utUVVbrh+Jlrr1Fv0e56GGzAFOXN7dk/FviaDW8LHmK52DlcH4WP2n6gI8vN1aesBFgo9w==
   dependencies:
     yallist "^3.0.2"
+
+lucide-react-native@^1.14.0:
+  version "1.14.0"
+  resolved "https://registry.npmjs.org/lucide-react-native/-/lucide-react-native-1.14.0.tgz#82a89db0d37b906f519331c3a18d277f1e9c37d0"
+  integrity sha512-FkOjd4JHIB8SplakHQjeo4RR/5peXtl+PbL+TghQqWzcQ+AKbJ/PFl5xEnerLtSQ4EIq6B9uXblY7QSyKg05WQ==
 
 make-dir@^4.0.0:
   version "4.0.0"

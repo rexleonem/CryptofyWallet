@@ -21,7 +21,6 @@ import ReceiveScreen from '../screens/Transactions/ReceiveScreen';
 import HistoryScreen from '../screens/Transactions/HistoryScreen';
 import TokenDetailScreen from '../screens/Portfolio/TokenDetailScreen';
 import InsightsDetailScreen from '../screens/Insights/InsightsDetailScreen';
-import SubscriptionScreen from '../screens/Subscription/SubscriptionScreen';
 
 const Stack = createNativeStackNavigator();
 const queryClient = new QueryClient();
@@ -54,7 +53,6 @@ export default function App() {
               <Stack.Screen name="History" component={HistoryScreen} />
               <Stack.Screen name="TokenDetail" component={TokenDetailScreen} />
               <Stack.Screen name="InsightsDetail" component={InsightsDetailScreen} />
-              <Stack.Screen name="Subscription" component={SubscriptionScreen} />
             </Stack.Navigator>
           </NavigationContainer>
         </QueryClientProvider>
