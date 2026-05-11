@@ -10,8 +10,8 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     }
     
     super({
-      datasourceUrl: url || '',
-    } as any);
+      log: ['query', 'info', 'warn', 'error'],
+    });
   }
 
   async onModuleInit() {
