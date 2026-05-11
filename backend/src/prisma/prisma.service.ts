@@ -9,9 +9,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       console.error('❌ DATABASE_URL is not defined in environment variables');
     }
     
-    super({
-      datasourceUrl: url || '', 
-    });
+    super();
   }
 
   async onModuleInit() {
