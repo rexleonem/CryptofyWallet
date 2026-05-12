@@ -24,7 +24,11 @@ export class AiService {
     };
 
     try {
-      const aiUrl = this.configService.get<string>('AI_ENGINE_URL') || 'http://localhost:8000';
+      const isProd = this.configService.get<string>('NODE_ENV') === 'production';
+      const aiUrl = isProd 
+        ? this.configService.get<string>('AI_ENGINE_URL') 
+        : (this.configService.get<string>('DEV_AI_ENGINE_URL') || 'http://localhost:8000');
+        
       const response = await axios.post(`${aiUrl}/api/analyze/portfolio`, aiInput);
       return response.data;
     } catch (error) {
@@ -62,7 +66,11 @@ export class AiService {
     };
 
     try {
-      const aiUrl = this.configService.get<string>('AI_ENGINE_URL') || 'http://localhost:8000';
+      const isProd = this.configService.get<string>('NODE_ENV') === 'production';
+      const aiUrl = isProd 
+        ? this.configService.get<string>('AI_ENGINE_URL') 
+        : (this.configService.get<string>('DEV_AI_ENGINE_URL') || 'http://localhost:8000');
+
       const response = await axios.post(`${aiUrl}/api/chat/respond`, {
         message,
         context
