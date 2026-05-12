@@ -1,10 +1,11 @@
 import axios from 'axios';
+import { API_BASE_URL } from '@env';
 
-// The base URL would typically point to the NestJS backend
-const API_BASE_URL = (typeof process !== 'undefined' && process.env?.API_BASE_URL) || 'http://localhost:3000';
+// Base URL for the NestJS backend
+const BASE_URL = API_BASE_URL || 'http://localhost:3000';
 
 export const apiClient = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: BASE_URL,
   timeout: 10000,
 });
 

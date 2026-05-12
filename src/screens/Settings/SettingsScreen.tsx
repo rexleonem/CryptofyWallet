@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView } from 'react-native';
 import { useWalletStore } from '../../store/walletStore';
 import { COLORS, SPACING, TYPOGRAPHY } from '../../constants/Theme';
+import { APP_VERSION, APP_BUILD } from '../../constants/Config';
 import { Settings as SettingsIcon, ChevronRight, Lock, Shield, Bell, CircleHelp, LogOut, User } from 'lucide-react-native';
 
 export default function SettingsScreen() {
@@ -65,7 +66,7 @@ export default function SettingsScreen() {
           />
         </View>
 
-        <Text style={styles.versionText}>Version 1.0.0 (Build 12)</Text>
+        <Text style={styles.versionText}>Version {APP_VERSION} (Build {APP_BUILD})</Text>
       </ScrollView>
     </SafeAreaView>
   );

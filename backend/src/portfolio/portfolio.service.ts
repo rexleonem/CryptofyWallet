@@ -1,11 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { BlockchainService } from '../blockchain/blockchain.service';
 import { ethers } from 'ethers';
+import { PORTFOLIO_CACHE_TTL, MOCK_PRICES, MOCK_24H_CHANGES, MOCK_HISTORY } from '../common/constants';
 
 @Injectable()
 export class PortfolioService {
   private cache = new Map<string, { data: any, timestamp: number }>();
-  private CACHE_TTL = 30000; // 30 seconds
+  private CACHE_TTL = PORTFOLIO_CACHE_TTL;
 
   constructor(private blockchainService: BlockchainService) {}
 
@@ -26,8 +27,8 @@ export class PortfolioService {
         const balanceEth = parseFloat(ethers.formatEther(balanceWei));
         
         // Use chain-specific pricing mock
-        const prices = { 'ETH': 2960.00, 'POLYGON': 0.72, 'BSC': 610.00 };
-        const value = balanceEth * prices[chain];
+        const price = MOCK_PRICES[chain] || 0;
+        const value = balanceEth * price;
         
         if (balanceEth > 0) {
           allTokens.push({
@@ -35,8 +36,8 @@ export class PortfolioService {
             name: chain === 'POLYGON' ? 'Polygon' : chain === 'BSC' ? 'Binance' : 'Ethereum',
             amount: balanceEth.toFixed(4),
             value: value.toFixed(2),
-            change24h: chain === 'ETH' ? 4.2 : -1.5,
-            price: prices[chain].toFixed(2),
+            change24h: MOCK_24H_CHANGES[chain] || 0,
+            price: price.toFixed(2),
             chain
           });
           totalPortfolioValue += value;
@@ -45,7 +46,7 @@ export class PortfolioService {
 
       // Add dummy tokens if portfolio is empty for better UI demonstration
       if (allTokens.length === 0) {
-          allTokens.push({ symbol: 'ETH', name: 'Ethereum', amount: '0.0000', value: '0.00', change24h: 0, price: '2960', chain: 'ETH' });
+          allTokens.push({ symbol: 'ETH', name: 'Ethereum', amount: '0.0000', value: '0.00', change24h: 0, price: MOCK_PRICES['ETH'].toString(), chain: 'ETH' });
       }
 
       const result = {
@@ -67,14 +68,6 @@ export class PortfolioService {
 
   async getHistory(address: string) {
     // Daily snapshots for the last 7 days
-    return [
-      { time: 'Mon', value: 4200 },
-      { time: 'Tue', value: 4350 },
-      { time: 'Wed', value: 4100 },
-      { time: 'Thu', value: 4500 },
-      { time: 'Fri', value: 4800 },
-      { time: 'Sat', value: 4700 },
-      { time: 'Sun', value: 4892.10 },
-    ];
+    return MOCK_HISTORY;
   }
 }

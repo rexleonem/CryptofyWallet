@@ -1,10 +1,15 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PortfolioService } from '../portfolio/portfolio.service';
 import axios from 'axios';
+import { DEFAULT_USER_PLAN } from '../common/constants';
 
 @Injectable()
 export class AiService {
-  constructor(private portfolioService: PortfolioService) {}
+  constructor(
+    private portfolioService: PortfolioService,
+    private configService: ConfigService
+  ) {}
 
   async getPortfolioInsights(address: string) {
     const portfolio = await this.portfolioService.getSummary(address);
@@ -19,7 +24,7 @@ export class AiService {
     };
 
     try {
-      const aiUrl = process.env.AI_ENGINE_URL || 'http://localhost:8000';
+      const aiUrl = this.configService.get<string>('AI_ENGINE_URL') || 'http://localhost:8000';
       const response = await axios.post(`${aiUrl}/api/analyze/portfolio`, aiInput);
       return response.data;
     } catch (error) {
@@ -33,7 +38,7 @@ export class AiService {
     const insights = await this.getPortfolioInsights(address);
 
     // Mocking user plan lookup for Stage 7
-    const userPlan = 'FREE'; 
+    const userPlan = DEFAULT_USER_PLAN; 
 
     if (userPlan === 'FREE') {
       return {
@@ -57,7 +62,7 @@ export class AiService {
     };
 
     try {
-      const aiUrl = process.env.AI_ENGINE_URL || 'http://localhost:8000';
+      const aiUrl = this.configService.get<string>('AI_ENGINE_URL') || 'http://localhost:8000';
       const response = await axios.post(`${aiUrl}/api/chat/respond`, {
         message,
         context

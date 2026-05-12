@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, SafeAreaView, FlatList, TextInput, TouchableOpa
 import { useNavigation } from '@react-navigation/native';
 import { useWalletStore } from '../../store/walletStore';
 import { COLORS, SPACING, TYPOGRAPHY } from '../../constants/Theme';
+import { apiClient } from '../../api/client';
 import ChatBubble from '../../components/ChatBubble';
 import SuggestionChips from '../../components/SuggestionChips';
 
@@ -36,12 +37,8 @@ export default function ChatScreen() {
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:3000/ai/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ address, message: text })
-      });
-      const data = await response.json() as any;
+      const response = await apiClient.post('/ai/chat', { address, message: text });
+      const data = response.data;
       
       const aiMsg = { 
         id: (Date.now() + 1).toString(), 

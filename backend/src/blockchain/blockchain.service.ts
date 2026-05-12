@@ -1,16 +1,17 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { ethers } from 'ethers';
 
 @Injectable()
 export class BlockchainService {
   private providers: Map<string, ethers.JsonRpcProvider> = new Map();
 
-  constructor() {
-    const alchemyKey = process.env.ALCHEMY_API_KEY || '3xqHZz7DfKWBhtl4NHhQM';
+  constructor(private configService: ConfigService) {
+    const alchemyKey = this.configService.get<string>('ALCHEMY_API_KEY') || '3xqHZz7DfKWBhtl4NHhQM';
     
     this.providers.set('ETH', new ethers.JsonRpcProvider(`https://eth-mainnet.g.alchemy.com/v2/${alchemyKey}`));
     this.providers.set('POLYGON', new ethers.JsonRpcProvider(`https://polygon-mainnet.g.alchemy.com/v2/${alchemyKey}`));
-    this.providers.set('BSC', new ethers.JsonRpcProvider('https://bsc-dataseed.binance.org/'));
+    this.providers.set('BSC', new ethers.JsonRpcProvider(this.configService.get<string>('BSC_RPC_URL') || 'https://bsc-dataseed.binance.org/'));
   }
 
   getProvider(chain = 'ETH') {

@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, SafeAreaView, ScrollView, RefreshControl, Touch
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useWalletStore } from '../../store/walletStore';
 import { COLORS, SPACING, TYPOGRAPHY } from '../../constants/Theme';
+import { apiClient } from '../../api/client';
 import InsightCard from '../../components/InsightCard';
 import RiskBadge from '../../components/RiskBadge';
 
@@ -17,9 +18,8 @@ export default function InsightsDetailScreen() {
   const fetchAiInsights = async () => {
     if (!address) return;
     try {
-      const response = await fetch(`http://localhost:3000/ai/portfolio/${address}`);
-      const data = await response.json();
-      setAiData(data);
+      const response = await apiClient.get(`/ai/portfolio/${address}`);
+      setAiData(response.data);
     } catch (error) {
       console.error('AI Fetch Error:', error);
     } finally {

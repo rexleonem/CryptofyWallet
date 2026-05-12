@@ -4,6 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import TransactionCard from '../../components/TransactionCard';
 import { COLORS, SPACING, TYPOGRAPHY } from '../../constants/Theme';
 import { useWalletStore } from '../../store/walletStore';
+import { apiClient } from '../../api/client';
 
 export default function HistoryScreen() {
   const navigation = useNavigation();
@@ -13,9 +14,8 @@ export default function HistoryScreen() {
 
   const fetchHistory = async () => {
     try {
-      const response = await fetch(`http://localhost:3000/transaction/history/${address}`);
-      const data = await response.json();
-      setHistory(data as any[]);
+      const response = await apiClient.get(`/transaction/history/${address}`);
+      setHistory(response.data as any[]);
     } catch (error) {
       console.error('History Fetch Error:', error);
     } finally {

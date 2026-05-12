@@ -1,13 +1,18 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { ethers } from 'ethers';
 import { PrismaService } from '../prisma/prisma.service';
+import { MOCK_PRICES } from '../common/constants';
 
 @Injectable()
 export class WalletsService {
   private provider: ethers.JsonRpcProvider;
 
-  constructor(private prisma: PrismaService) {
-    const apiKey = process.env.ALCHEMY_API_KEY || '3xqHZz7DfKWBhtl4NHhQM';
+  constructor(
+    private prisma: PrismaService,
+    private configService: ConfigService
+  ) {
+    const apiKey = this.configService.get<string>('ALCHEMY_API_KEY') || '3xqHZz7DfKWBhtl4NHhQM';
     const rpcUrl = `https://eth-mainnet.g.alchemy.com/v2/${apiKey}`;
     this.provider = new ethers.JsonRpcProvider(rpcUrl);
   }
@@ -21,7 +26,7 @@ export class WalletsService {
       const balanceWei = await this.provider.getBalance(address);
       const balanceEth = ethers.formatEther(balanceWei);
       
-      const ethPrice = 2500; 
+      const ethPrice = MOCK_PRICES['ETH'] || 2500; 
       const balanceUsd = parseFloat(balanceEth) * ethPrice;
 
       return {
