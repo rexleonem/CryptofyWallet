@@ -8,20 +8,19 @@ import {
   ScrollView, 
   RefreshControl, 
   Alert, 
-  Image,
   Dimensions,
-  StatusBar
+  StatusBar,
+  ActivityIndicator
 } from 'react-native';
 import Clipboard from '@react-native-clipboard/clipboard';
 import { useNavigation } from '@react-navigation/native';
 import { useWalletStore } from '../../store/walletStore';
 import { COLORS, SPACING, TYPOGRAPHY } from '../../constants/Theme';
-import { CURRENCIES } from '../../constants/Currencies';
+import { fetchPortfolioSummary, PortfolioSummary, TokenAsset } from '../../api/portfolio';
 import { 
   ArrowUpRight, 
   ArrowDownLeft, 
   Plus, 
-  RefreshCw, 
   Copy, 
   Wallet,
   Eye,
@@ -35,38 +34,37 @@ const { width } = Dimensions.get('window');
 export default function DashboardScreen() {
   const navigation = useNavigation<any>();
   const { address } = useWalletStore();
-  const [balance, setBalance] = useState({ eth: '0.00', usd: '0.00', cfyc: '1250.00', chusd: '100.00' });
+  const [portfolio, setPortfolio] = useState<PortfolioSummary | null>(null);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showBalance, setShowBalance] = useState(true);
 
-  const fetchBalance = async () => {
+  const loadData = async () => {
     if (!address) return;
     try {
-      // Mocking balance fetch
-      // In a real app, you'd fetch from an API or blockchain
-      setBalance(prev => ({
-        ...prev,
-        eth: '1.24',
-        usd: '3,450.00'
-      }));
+      const data = await fetchPortfolioSummary(address);
+      setPortfolio(data);
     } catch (error) {
       console.error('Balance Fetch Error:', error);
+      Alert.alert('Network Error', 'Could not sync wallet data. Please check your connection.');
     } finally {
+      setLoading(false);
       setRefreshing(false);
     }
   };
 
   useEffect(() => {
-    fetchBalance();
+    loadData();
   }, [address]);
 
   const onRefresh = () => {
     setRefreshing(true);
-    fetchBalance();
+    loadData();
   };
 
   const copyAddress = () => {
-    Clipboard.setString(address || '');
+    if (!address) return;
+    Clipboard.setString(address);
     Alert.alert('Copied', 'Address copied to clipboard');
   };
 
@@ -82,30 +80,44 @@ export default function DashboardScreen() {
     </View>
   );
 
-  const AssetCard = ({ currency, balance, usdValue }: any) => (
+  const AssetCard = ({ token }: { token: TokenAsset }) => (
     <TouchableOpacity 
       style={styles.assetCard} 
-      onPress={() => navigation.navigate('TokenDetail', { currency })}
+      onPress={() => navigation.navigate('TokenDetail', { token })}
     >
-      <View style={[styles.assetIconContainer, { backgroundColor: `${currency.color}15` }]}>
-        <Text style={[styles.assetIconText, { color: currency.color }]}>
-          {currency.symbol.substring(0, 1)}
+      <View style={[styles.assetIconContainer, { backgroundColor: `${COLORS.primary}15` }]}>
+        <Text style={[styles.assetIconText, { color: COLORS.primary }]}>
+          {token.symbol.substring(0, 1)}
         </Text>
       </View>
       <View style={styles.assetInfo}>
-        <Text style={styles.assetName}>{currency.name}</Text>
-        <Text style={styles.assetSymbol}>{currency.symbol}</Text>
+        <Text style={styles.assetName}>{token.name}</Text>
+        <Text style={styles.assetSymbol}>{token.symbol}</Text>
       </View>
       <View style={styles.assetValue}>
         <Text style={styles.assetBalanceText}>
-          {showBalance ? balance : '••••'} {currency.symbol}
+          {showBalance ? parseFloat(token.amount).toFixed(4) : '••••'} {token.symbol}
         </Text>
         <Text style={styles.assetUsdText}>
-          {showBalance ? `$${usdValue}` : '••••'}
+          {showBalance ? `$${token.value}` : '••••'}
         </Text>
       </View>
     </TouchableOpacity>
   );
+
+  if (loading && !refreshing) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const ethToken = portfolio?.tokens.find(t => t.symbol === 'ETH');
+  const mainBalance = portfolio?.totalValue || '0.00';
+  const change = portfolio?.change24h || 0;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -146,16 +158,18 @@ export default function DashboardScreen() {
           </View>
           
           <Text style={styles.mainBalance}>
-            {showBalance ? `$${balance.usd}` : '$••••••'}
+            {showBalance ? `$${parseFloat(mainBalance).toLocaleString()}` : '$••••••'}
           </Text>
           
           <View style={styles.balanceFooter}>
-            <View style={styles.changeBadge}>
-              <ArrowUpRight size={14} color={COLORS.success} />
-              <Text style={styles.changeText}>+5.24%</Text>
+            <View style={[styles.changeBadge, { backgroundColor: change >= 0 ? `${COLORS.success}15` : `${COLORS.error}15` }]}>
+              {change >= 0 ? <ArrowUpRight size={14} color={COLORS.success} /> : <ArrowDownLeft size={14} color={COLORS.error} />}
+              <Text style={[styles.changeText, { color: change >= 0 ? COLORS.success : COLORS.error }]}>
+                {change >= 0 ? '+' : ''}{change}%
+              </Text>
             </View>
             <Text style={styles.secondaryBalance}>
-              ≈ {showBalance ? balance.eth : '•••'} ETH
+              ≈ {showBalance ? (ethToken ? ethToken.amount : '0.00') : '•••'} ETH
             </Text>
           </View>
         </View>
@@ -187,27 +201,21 @@ export default function DashboardScreen() {
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Your Assets</Text>
-          <TouchableOpacity>
+          <TouchableOpacity onPress={() => navigation.navigate('Portfolio')}>
             <Text style={styles.seeAllText}>See All</Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.assetsList}>
-          <AssetCard 
-            currency={CURRENCIES[0]} 
-            balance={balance.eth} 
-            usdValue="3,240.00" 
-          />
-          <AssetCard 
-            currency={CURRENCIES[1]} 
-            balance={balance.cfyc} 
-            usdValue="125.00" 
-          />
-          <AssetCard 
-            currency={CURRENCIES[2]} 
-            balance={balance.chusd} 
-            usdValue="100.00" 
-          />
+          {portfolio?.tokens.length ? (
+            portfolio.tokens.map((token, i) => (
+              <AssetCard key={i} token={token} />
+            ))
+          ) : (
+            <View style={styles.emptyAssets}>
+              <Text style={styles.emptyText}>No assets found in this wallet</Text>
+            </View>
+          )}
         </View>
 
         <View style={styles.promoCard}>
@@ -228,6 +236,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   header: {
     flexDirection: 'row',
@@ -322,14 +335,12 @@ const styles = StyleSheet.create({
   changeBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: `${COLORS.success}15`,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
     gap: 4,
   },
   changeText: {
-    color: COLORS.success,
     fontSize: 12,
     fontWeight: '700',
   },
@@ -419,6 +430,19 @@ const styles = StyleSheet.create({
   },
   assetUsdText: {
     ...TYPOGRAPHY.small,
+    color: COLORS.textMuted,
+  },
+  emptyAssets: {
+    padding: SPACING.xl,
+    alignItems: 'center',
+    backgroundColor: COLORS.card,
+    borderRadius: 20,
+    borderStyle: 'dashed',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  emptyText: {
+    ...TYPOGRAPHY.body,
     color: COLORS.textMuted,
   },
   promoCard: {

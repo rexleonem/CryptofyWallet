@@ -8,10 +8,12 @@ import {
   ActivityIndicator,
   SafeAreaView,
   StatusBar,
-  TextInput
+  TextInput,
+  RefreshControl
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { COLORS, SPACING, TYPOGRAPHY } from '../../constants/Theme';
+import { fetchP2POffers, P2POffer } from '../../api/p2p';
 import { 
   Search, 
   Filter, 
@@ -20,86 +22,35 @@ import {
   CreditCard
 } from 'lucide-react-native';
 
-interface Offer {
-  id: string;
-  type: 'BUY' | 'SELL';
-  asset: string;
-  price: number;
-  minAmount: number;
-  maxAmount: number;
-  paymentMethods: string[];
-  user: {
-    name: string;
-    rating: number;
-    trades: number;
-  };
-}
-
 const P2PMarketplace = () => {
-  const [offers, setOffers] = useState<Offer[]>([]);
+  const [offers, setOffers] = useState<P2POffer[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<'BUY' | 'SELL'>('BUY');
   const navigation = useNavigation<any>();
 
   useEffect(() => {
-    fetchOffers();
+    loadOffers();
   }, []);
 
-  const fetchOffers = async () => {
-    setLoading(true);
+  const loadOffers = async () => {
     try {
-      // Mocking P2P offers
-      const mockOffers: Offer[] = [
-        {
-          id: '1',
-          type: 'SELL',
-          asset: 'ETH',
-          price: 2650.40,
-          minAmount: 100,
-          maxAmount: 5000,
-          paymentMethods: ['Bank Transfer', 'PayPal'],
-          user: { name: 'CryptoWhale', rating: 4.9, trades: 1250 }
-        },
-        {
-          id: '2',
-          type: 'BUY',
-          asset: 'CFYC',
-          price: 0.12,
-          minAmount: 50,
-          maxAmount: 1000,
-          paymentMethods: ['Revolut', 'Wise'],
-          user: { name: 'EarlyAdopter', rating: 4.7, trades: 450 }
-        },
-        {
-          id: '3',
-          type: 'SELL',
-          asset: 'CHUSD',
-          price: 1.00,
-          minAmount: 10,
-          maxAmount: 10000,
-          paymentMethods: ['Bank Transfer', 'Zelle'],
-          user: { name: 'SecureTrade', rating: 5.0, trades: 890 }
-        },
-        {
-          id: '4',
-          type: 'SELL',
-          asset: 'CFYC',
-          price: 0.11,
-          minAmount: 100,
-          maxAmount: 2000,
-          paymentMethods: ['Crypto Wallet'],
-          user: { name: 'CFYFan', rating: 4.8, trades: 120 }
-        }
-      ];
-      setOffers(mockOffers);
+      const data = await fetchP2POffers();
+      setOffers(data);
     } catch (error) {
       console.error('Error fetching offers:', error);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
-  const renderOffer = ({ item }: { item: Offer }) => (
+  const onRefresh = () => {
+    setRefreshing(true);
+    loadOffers();
+  };
+
+  const renderOffer = ({ item }: { item: P2POffer }) => (
     <TouchableOpacity 
       style={styles.offerCard}
       onPress={() => navigation.navigate('TradeDetails', { offer: item })}

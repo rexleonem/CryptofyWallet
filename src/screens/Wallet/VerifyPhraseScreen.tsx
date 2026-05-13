@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Alert, ScrollView } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useWalletStore } from '../../store/walletStore';
 import { storeMnemonic } from '../../wallet/keystore';
@@ -18,16 +18,22 @@ export default function VerifyPhraseScreen() {
   const [options, setOptions] = useState<string[]>([]);
 
   useEffect(() => {
-    // Pick 3 random indices to verify
-    const indices = [2, 6, 10]; // For demo, let's pick 3, 7, 11 (0-indexed 2, 6, 10)
-    setIndicesToVerify(indices);
+    // Pick 3 unique random indices to verify
+    const totalWords = words.length;
+    const indices: number[] = [];
+    while (indices.length < 3) {
+      const r = Math.floor(Math.random() * totalWords);
+      if (indices.indexOf(r) === -1) indices.push(r);
+    }
+    setIndicesToVerify(indices.sort((a, b) => a - b));
     
-    // Create a pool of 6 random words for options
-    const pool = [...words].sort(() => Math.random() - 0.5).slice(0, 8);
+    // Create a pool of ALL words for options, shuffled
+    const pool = [...words].sort(() => Math.random() - 0.5);
     setOptions(pool);
   }, []);
 
   const handleSelect = (word: string) => {
+    // Find the first empty verification slot
     const nextIndex = indicesToVerify.find(idx => !selections[idx]);
     if (nextIndex !== undefined) {
       setSelections({ ...selections, [nextIndex]: word });
@@ -62,47 +68,52 @@ export default function VerifyPhraseScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Verify Phrase</Text>
-        <Text style={styles.subtitle}>Select the correct words to confirm you've saved them.</Text>
-      </View>
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.header}>
+          <Text style={styles.title}>Verify Phrase</Text>
+          <Text style={styles.subtitle}>Select the correct words to confirm you've saved them.</Text>
+        </View>
 
-      <View style={styles.verificationArea}>
-        {indicesToVerify.map((idx) => (
-          <View key={idx} style={styles.verifyRow}>
-            <Text style={styles.indexLabel}>Word #{idx + 1}:</Text>
-            <View style={styles.selectedWordBox}>
-              <Text style={styles.selectedWordText}>{selections[idx] || '???'}</Text>
+        <View style={styles.verificationArea}>
+          {indicesToVerify.map((idx) => (
+            <View key={idx} style={styles.verifyRow}>
+              <Text style={styles.indexLabel}>Word #{idx + 1}:</Text>
+              <View style={styles.selectedWordBox}>
+                <Text style={styles.selectedWordText}>{selections[idx] || '???'}</Text>
+              </View>
             </View>
-          </View>
-        ))}
-      </View>
+          ))}
+        </View>
 
-      <View style={styles.optionsGrid}>
-        {options.map((word, i) => (
-          <TouchableOpacity 
-            key={i} 
-            style={styles.optionButton}
-            onPress={() => handleSelect(word)}
-          >
-            <Text style={styles.optionText}>{word}</Text>
+        <View style={styles.optionsGrid}>
+          {options.map((word, i) => (
+            <TouchableOpacity 
+              key={i} 
+              style={styles.optionButton}
+              onPress={() => handleSelect(word)}
+            >
+              <Text style={styles.optionText}>{word}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <View style={styles.footer}>
+          <TouchableOpacity onPress={clearSelection} style={styles.clearButton}>
+            <Text style={styles.clearText}>Clear All</Text>
           </TouchableOpacity>
-        ))}
-      </View>
-
-      <View style={styles.footer}>
-        <TouchableOpacity onPress={clearSelection} style={styles.clearButton}>
-          <Text style={styles.clearText}>Clear All</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={[styles.button, !isComplete && styles.disabledButton]}
-          disabled={!isComplete}
-          onPress={handleVerify}
-        >
-          <Text style={styles.buttonText}>Verify & Complete</Text>
-        </TouchableOpacity>
-      </View>
+          
+          <TouchableOpacity 
+            style={[styles.button, !isComplete && styles.disabledButton]}
+            disabled={!isComplete}
+            onPress={handleVerify}
+          >
+            <Text style={styles.buttonText}>Verify & Complete</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -111,7 +122,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+  },
+  scrollContent: {
     padding: SPACING.l,
+    flexGrow: 1,
   },
   header: {
     marginBottom: SPACING.xl,
@@ -122,6 +136,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     ...TYPOGRAPHY.body,
+    color: COLORS.textMuted,
   },
   verificationArea: {
     marginBottom: SPACING.xl,
@@ -134,6 +149,7 @@ const styles = StyleSheet.create({
   indexLabel: {
     ...TYPOGRAPHY.body,
     width: 100,
+    color: COLORS.textPrimary,
   },
   selectedWordBox: {
     flex: 1,
@@ -154,22 +170,27 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
+    marginBottom: SPACING.xl,
   },
   optionButton: {
-    width: '48%',
-    height: 48,
+    width: '31%',
+    height: 44,
     backgroundColor: COLORS.card,
-    borderRadius: 12,
+    borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: SPACING.m,
+    marginBottom: SPACING.s,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   optionText: {
-    ...TYPOGRAPHY.body,
+    ...TYPOGRAPHY.small,
     color: COLORS.textPrimary,
+    fontWeight: '500',
   },
   footer: {
     marginTop: 'auto',
+    paddingBottom: SPACING.l,
   },
   clearButton: {
     alignSelf: 'center',
@@ -177,6 +198,7 @@ const styles = StyleSheet.create({
   },
   clearText: {
     color: COLORS.error,
+    fontWeight: '600',
   },
   button: {
     height: 56,

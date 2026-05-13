@@ -8,10 +8,10 @@ const { getDefaultConfig, mergeConfig } = require('@react-native/metro-config');
  */
 const config = {
   resolver: {
-    // Enable package exports resolution but force CJS ('require'/'default')
-    // conditions so Hermes never receives raw ESM (import/export) syntax.
+    // Prefer React Native/browser package exports while still selecting CJS
+    // entries when packages provide them for Hermes.
     unstable_enablePackageExports: true,
-    unstable_conditionNames: ['require', 'default'],
+    unstable_conditionNames: ['react-native', 'browser', 'require', 'default'],
   },
 };
 

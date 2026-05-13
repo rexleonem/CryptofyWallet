@@ -26,7 +26,7 @@ export default function TokenDetailScreen() {
           <ProfitBadge percentage={token.change24h} />
         </View>
 
-        <PortfolioChart data={[2800, 2950, 2900, 3100, 3050, 2960]} />
+        <PortfolioChart data={[parseFloat(token.price), parseFloat(token.price), parseFloat(token.price)]} />
 
         <View style={styles.statsCard}>
           <Text style={styles.statsTitle}>Holdings</Text>
@@ -39,16 +39,6 @@ export default function TokenDetailScreen() {
           <View style={styles.statRow}>
             <Text style={styles.statLabel}>Current Value</Text>
             <Text style={styles.statValue}>${parseFloat(token.value).toLocaleString()}</Text>
-          </View>
-
-          <View style={styles.statRow}>
-            <Text style={styles.statLabel}>Avg. Buy Price</Text>
-            <Text style={styles.statValue}>$2,840.12</Text>
-          </View>
-
-          <View style={styles.statRow}>
-            <Text style={styles.statLabel}>Profit/Loss</Text>
-            <Text style={[styles.statValue, { color: COLORS.success }]}>+$124.32 (4.4%)</Text>
           </View>
         </View>
 

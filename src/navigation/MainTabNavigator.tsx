@@ -2,6 +2,7 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Wallet, PieChart, Repeat, MessageSquare, Settings as SettingsIcon } from 'lucide-react-native';
 import { COLORS } from '../constants/Theme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Screens
 import DashboardScreen from '../screens/Dashboard/DashboardScreen';
@@ -13,6 +14,8 @@ import SettingsScreen from '../screens/Settings/SettingsScreen';
 const Tab = createBottomTabNavigator();
 
 export default function MainTabNavigator() {
+  const insets = useSafeAreaInsets();
+  
   return (
     <Tab.Navigator
       screenOptions={{
@@ -20,8 +23,8 @@ export default function MainTabNavigator() {
         tabBarStyle: {
           backgroundColor: COLORS.background,
           borderTopColor: COLORS.border,
-          height: 70,
-          paddingBottom: 12,
+          height: 70 + insets.bottom,
+          paddingBottom: insets.bottom > 0 ? insets.bottom : 12,
           paddingTop: 12,
         },
         tabBarActiveTintColor: COLORS.primary,

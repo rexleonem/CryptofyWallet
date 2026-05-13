@@ -113,6 +113,11 @@ android {
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
         }
     }
+    externalNativeBuild {
+        cmake {
+            buildStagingDirectory = file("C:/tmp/cryptofy-app-cxx")
+        }
+    }
 }
 
 dependencies {
@@ -123,5 +128,12 @@ dependencies {
         implementation("com.facebook.react:hermes-android")
     } else {
         implementation jscFlavor
+    }
+}
+
+gradle.projectsEvaluated {
+    tasks.matching { it.name.startsWith("configureCMakeRelWithDebInfo") }.configureEach {
+        dependsOn(":react-native-reanimated:prefabReleasePackage")
+        dependsOn(":react-native-worklets:prefabReleasePackage")
     }
 }

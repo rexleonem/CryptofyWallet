@@ -8,18 +8,15 @@ import {
   RefreshControl, 
   TouchableOpacity, 
   ActivityIndicator,
-  StatusBar
+  StatusBar,
+  Alert
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useWalletStore } from '../../store/walletStore';
 import { COLORS, SPACING, TYPOGRAPHY } from '../../constants/Theme';
-import { CURRENCIES } from '../../constants/Currencies';
+import { fetchPortfolioSummary, fetchPortfolioHistory, PortfolioSummary } from '../../api/portfolio';
 import PortfolioChart from '../../components/PortfolioChart';
 import TokenRow from '../../components/TokenRow';
-import ProfitBadge from '../../components/ProfitBadge';
-import InsightStrip from '../../components/InsightStrip';
-import Skeleton from '../../components/Skeleton';
-import ChainSwitcher from '../../components/ChainSwitcher';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -35,35 +32,23 @@ export default function PortfolioHomeScreen() {
   
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [portfolio, setPortfolio] = useState<any>(null);
+  const [portfolio, setPortfolio] = useState<PortfolioSummary | null>(null);
   const [history, setHistory] = useState<number[]>([]);
-  const [aiInsight, setAiInsight] = useState<any>(null);
-  const [selectedChain, setSelectedChain] = useState('ETH');
   const [timeFilter, setTimeFilter] = useState('7D');
 
   const fetchData = async () => {
     if (!address) return;
     try {
-      // Mocking portfolio data
-      const mockSummary = {
-        totalValue: '4825.40',
-        change24h: 5.24,
-        tokens: [
-          { symbol: 'ETH', name: 'Ethereum', amount: '1.24', value: '3240.00', change24h: 3.2 },
-          { symbol: 'CFYC', name: 'Cryptofy Coin', amount: '1250.00', value: '125.00', change24h: 12.5 },
-          { symbol: 'CHUSD', name: 'Cherokee USD', amount: '100.00', value: '100.00', change24h: 0.1 },
-        ]
-      };
+      const [summary, historyData] = await Promise.all([
+        fetchPortfolioSummary(address),
+        fetchPortfolioHistory(address)
+      ]);
       
-      setPortfolio(mockSummary);
-      setHistory([3000, 3100, 3050, 3200, 3400, 3350, 3450]);
-      setAiInsight({
-        title: 'Portfolio Diversification',
-        message: 'Your exposure to ETH is high. Consider diversifying into CFYC for potential high growth.',
-        severity: 'info'
-      });
+      setPortfolio(summary);
+      setHistory(historyData);
     } catch (error) {
       console.error('Portfolio Fetch Error:', error);
+      Alert.alert('Sync Error', 'Unable to fetch latest portfolio data.');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -90,6 +75,9 @@ export default function PortfolioHomeScreen() {
     );
   }
 
+  const change = portfolio?.change24h || 0;
+  const isPositive = change >= 0;
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" />
@@ -109,9 +97,11 @@ export default function PortfolioHomeScreen() {
           <Text style={styles.summaryLabel}>Net Worth</Text>
           <Text style={styles.summaryValue}>${parseFloat(portfolio?.totalValue || '0').toLocaleString()}</Text>
           <View style={styles.performanceRow}>
-            <View style={[styles.badge, { backgroundColor: `${COLORS.success}15` }]}>
-              <TrendingUp size={14} color={COLORS.success} />
-              <Text style={[styles.badgeText, { color: COLORS.success }]}>+${portfolio?.change24h}%</Text>
+            <View style={[styles.badge, { backgroundColor: isPositive ? `${COLORS.success}15` : `${COLORS.error}15` }]}>
+              {isPositive ? <TrendingUp size={14} color={COLORS.success} /> : <TrendingDown size={14} color={COLORS.error} />}
+              <Text style={[styles.badgeText, { color: isPositive ? COLORS.success : COLORS.error }]}>
+                {isPositive ? '+' : ''}{change}%
+              </Text>
             </View>
             <Text style={styles.performancePeriod}>last 24 hours</Text>
           </View>
@@ -139,18 +129,16 @@ export default function PortfolioHomeScreen() {
             <Sparkles size={20} color={COLORS.accent} />
             <Text style={styles.sectionTitle}>AI Insights</Text>
           </View>
-          {aiInsight && (
-            <TouchableOpacity 
-              style={styles.insightCard}
-              onPress={() => navigation.navigate('InsightsDetail')}
-            >
-              <View style={styles.insightContent}>
-                <Text style={styles.insightTitle}>{aiInsight.title}</Text>
-                <Text style={styles.insightMessage}>{aiInsight.message}</Text>
-              </View>
-              <ArrowUpRight size={20} color={COLORS.textMuted} />
-            </TouchableOpacity>
-          )}
+          <TouchableOpacity 
+            style={styles.insightCard}
+            onPress={() => navigation.navigate('InsightsDetail')}
+          >
+            <View style={styles.insightContent}>
+              <Text style={styles.insightTitle}>Portfolio Diversification</Text>
+              <Text style={styles.insightMessage}>Consider diversifying your assets across different chains for better risk management.</Text>
+            </View>
+            <ArrowUpRight size={20} color={COLORS.textMuted} />
+          </TouchableOpacity>
         </View>
 
         <View style={styles.sectionHeaderRow}>
@@ -172,7 +160,7 @@ export default function PortfolioHomeScreen() {
           ))}
         </View>
 
-        {!portfolio?.tokens.length && (
+        {(!portfolio?.tokens || portfolio.tokens.length === 0) && (
           <View style={styles.emptyState}>
             <Text style={styles.emptyTitle}>No assets yet</Text>
             <Text style={styles.emptySubtitle}>Your portfolio will appear here once you receive crypto.</Text>
