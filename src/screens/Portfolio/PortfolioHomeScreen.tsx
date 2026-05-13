@@ -77,6 +77,7 @@ export default function PortfolioHomeScreen() {
 
   const change = portfolio?.change24h || 0;
   const isPositive = change >= 0;
+  const tokens = portfolio?.tokens || [];
 
   return (
     <SafeAreaView style={styles.container}>
@@ -121,7 +122,7 @@ export default function PortfolioHomeScreen() {
               ))}
             </View>
           </View>
-          <PortfolioChart data={history.length > 0 ? history : [0, 0, 0]} />
+          <PortfolioChart data={history && history.length > 0 ? history : [0, 0, 0]} />
         </View>
 
         <View style={styles.aiSection}>
@@ -147,20 +148,20 @@ export default function PortfolioHomeScreen() {
         </View>
 
         <View style={styles.assetsList}>
-          {portfolio?.tokens.map((token: any, i: number) => (
+          {tokens.map((token: any, i: number) => (
             <TokenRow 
-              key={i}
-              symbol={token.symbol}
-              name={token.name}
-              amount={token.amount}
-              value={token.value}
-              change24h={token.change24h}
+              key={`${token.symbol}-${i}`}
+              symbol={token.symbol || '???'}
+              name={token.name || 'Unknown Token'}
+              amount={token.amount || '0'}
+              value={token.value || '0'}
+              change24h={token.change24h || 0}
               onPress={() => navigation.navigate('TokenDetail', { token })}
             />
           ))}
         </View>
 
-        {(!portfolio?.tokens || portfolio.tokens.length === 0) && (
+        {tokens.length === 0 && (
           <View style={styles.emptyState}>
             <Text style={styles.emptyTitle}>No assets yet</Text>
             <Text style={styles.emptySubtitle}>Your portfolio will appear here once you receive crypto.</Text>

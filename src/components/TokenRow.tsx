@@ -12,20 +12,21 @@ interface TokenRowProps {
   onPress: () => void;
 }
 
-export default function TokenRow({ symbol, name, amount, value, change24h, onPress }: TokenRowProps) {
+export default function TokenRow({ symbol = '?', name = 'Unknown', amount = '0', value = '0', change24h = 0, onPress }: TokenRowProps) {
+  const displaySymbol = symbol || '?';
   return (
     <TouchableOpacity style={styles.container} onPress={onPress}>
       <View style={styles.iconContainer}>
-        <Text style={styles.iconText}>{symbol[0]}</Text>
+        <Text style={styles.iconText}>{displaySymbol[0] || '?'}</Text>
       </View>
       
       <View style={styles.mainInfo}>
         <Text style={styles.name}>{name}</Text>
-        <Text style={styles.amount}>{amount} {symbol}</Text>
+        <Text style={styles.amount}>{amount} {displaySymbol}</Text>
       </View>
 
       <View style={styles.valueInfo}>
-        <Text style={styles.value}>${parseFloat(value).toLocaleString()}</Text>
+        <Text style={styles.value}>${parseFloat(value || '0').toLocaleString()}</Text>
         <ProfitBadge percentage={change24h} />
       </View>
     </TouchableOpacity>

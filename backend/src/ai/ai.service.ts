@@ -41,17 +41,7 @@ export class AiService {
     const portfolio = await this.portfolioService.getSummary(address);
     const insights = await this.getPortfolioInsights(address);
 
-    // Mocking user plan lookup for Stage 7
-    const userPlan = DEFAULT_USER_PLAN; 
-
-    if (userPlan === 'FREE') {
-      return {
-        response: "You are currently on the FREE plan. Upgrade to PRO to get personalized strategy advice and deeper portfolio reasoning.",
-        insights: [insights.insights?.[0] || 'Basic risk analysis available'],
-        actions: ["Upgrade to PRO"]
-      };
-    }
-
+    // User plan lookup (all plans now have access to core AI functionality)
     const context = {
       totalValue: parseFloat(portfolio.totalValue),
       change24h: portfolio.change24h,

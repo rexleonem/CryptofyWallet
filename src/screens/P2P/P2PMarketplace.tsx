@@ -50,57 +50,68 @@ const P2PMarketplace = () => {
     loadOffers();
   };
 
-  const renderOffer = ({ item }: { item: P2POffer }) => (
-    <TouchableOpacity 
-      style={styles.offerCard}
-      onPress={() => navigation.navigate('TradeDetails', { offer: item })}
-    >
-      <View style={styles.offerHeader}>
-        <View style={styles.userInfo}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{item.user.name.charAt(0)}</Text>
-          </View>
-          <View>
-            <View style={styles.nameRow}>
-              <Text style={styles.userName}>{item.user.name}</Text>
-              {item.user.rating >= 4.8 && <ShieldCheck size={14} color={COLORS.secondary} />}
-            </View>
-            <Text style={styles.userStats}>{item.user.trades} trades • {item.user.rating * 20}% completion</Text>
-          </View>
-        </View>
-        <View style={[styles.typeBadge, item.type === 'SELL' ? styles.sellBadge : styles.buyBadge]}>
-          <Text style={[styles.typeText, item.type === 'SELL' ? styles.sellText : styles.buyText]}>
-            {item.type}
-          </Text>
-        </View>
-      </View>
-      
-      <View style={styles.priceSection}>
-        <View>
-          <Text style={styles.assetLabel}>{item.asset} Price</Text>
-          <Text style={styles.priceValue}>${item.price.toLocaleString()}</Text>
-        </View>
-        <View style={styles.limitInfo}>
-          <Text style={styles.limitLabel}>Available Limits</Text>
-          <Text style={styles.limitValue}>${item.minAmount} - ${item.maxAmount}</Text>
-        </View>
-      </View>
+  const renderOffer = ({ item }: { item: P2POffer }) => {
+    const userName = item?.user?.name || 'Anonymous';
+    const rating = item?.user?.rating || 0;
+    const trades = item?.user?.trades || 0;
+    const type = item?.type || 'BUY';
+    const asset = item?.asset || 'ETH';
+    const price = item?.price || 0;
+    const paymentMethods = Array.isArray(item?.paymentMethods) ? item.paymentMethods : [];
 
-      <View style={styles.footer}>
-        <View style={styles.paymentMethods}>
-          {item.paymentMethods.map((m, i) => (
-            <View key={i} style={styles.methodBadge}>
-              <CreditCard size={12} color={COLORS.textMuted} />
-              <Text style={styles.methodText}>{m}</Text>
+    return (
+      <TouchableOpacity 
+        style={styles.offerCard}
+        onPress={() => navigation.navigate('TradeDetails', { offer: item })}
+      >
+        <View style={styles.offerHeader}>
+          <View style={styles.userInfo}>
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>{userName.charAt(0)}</Text>
             </View>
-          ))}
+            <View>
+              <View style={styles.nameRow}>
+                <Text style={styles.userName}>{userName}</Text>
+                {rating >= 4.8 && <ShieldCheck size={14} color={COLORS.secondary} />}
+              </View>
+              <Text style={styles.userStats}>{trades} trades • {Math.round(rating * 20)}% completion</Text>
+            </View>
+          </View>
+          <View style={[styles.typeBadge, type === 'SELL' ? styles.sellBadge : styles.buyBadge]}>
+            <Text style={[styles.typeText, type === 'SELL' ? styles.sellText : styles.buyText]}>
+              {type}
+            </Text>
+          </View>
         </View>
-        <TouchableOpacity style={[styles.tradeButton, { backgroundColor: item.type === 'SELL' ? COLORS.primary : COLORS.secondary }]}>
-          <Text style={styles.tradeButtonText}>{item.type === 'SELL' ? 'Buy' : 'Sell'}</Text>
-        </TouchableOpacity>
-      </View>
-    </TouchableOpacity>
-  );
+        
+        <View style={styles.priceSection}>
+          <View>
+            <Text style={styles.assetLabel}>{asset} Price</Text>
+            <Text style={styles.priceValue}>${price.toLocaleString()}</Text>
+          </View>
+          <View style={styles.limitInfo}>
+            <Text style={styles.limitLabel}>Available Limits</Text>
+            <Text style={styles.limitValue}>${item?.minAmount || 0} - ${item?.maxAmount || 0}</Text>
+          </View>
+        </View>
+
+        <View style={styles.footer}>
+          <View style={styles.paymentMethods}>
+            {paymentMethods.slice(0, 2).map((m, i) => (
+              <View key={i} style={styles.methodBadge}>
+                <CreditCard size={12} color={COLORS.textMuted} />
+                <Text style={styles.methodText}>{m}</Text>
+              </View>
+            ))}
+          </View>
+          <TouchableOpacity style={[styles.tradeButton, { backgroundColor: type === 'SELL' ? COLORS.primary : COLORS.secondary }]}>
+            <Text style={styles.tradeButtonText}>{type === 'SELL' ? 'Buy' : 'Sell'}</Text>
+          </TouchableOpacity>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
 
   return (
     <SafeAreaView style={styles.container}>
@@ -147,13 +158,13 @@ const P2PMarketplace = () => {
         </View>
       ) : (
         <FlatList
-          data={offers.filter(o => o.type === filter)}
+          data={Array.isArray(offers) ? offers.filter(o => o?.type === filter) : []}
           renderItem={renderOffer}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
-          onRefresh={fetchOffers}
-          refreshing={loading}
+          onRefresh={loadOffers}
+          refreshing={refreshing}
           ListEmptyComponent={
             <View style={styles.emptyState}>
               <Text style={styles.emptyText}>No offers found for this asset.</Text>

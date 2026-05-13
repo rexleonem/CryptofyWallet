@@ -115,9 +115,10 @@ export default function DashboardScreen() {
     );
   }
 
-  const ethToken = portfolio?.tokens.find(t => t.symbol === 'ETH');
+  const ethToken = Array.isArray(portfolio?.tokens) ? portfolio?.tokens.find(t => t?.symbol === 'ETH') : null;
   const mainBalance = portfolio?.totalValue || '0.00';
   const change = portfolio?.change24h || 0;
+
 
   return (
     <SafeAreaView style={styles.container}>
@@ -207,9 +208,9 @@ export default function DashboardScreen() {
         </View>
 
         <View style={styles.assetsList}>
-          {portfolio?.tokens.length ? (
+          {Array.isArray(portfolio?.tokens) && portfolio.tokens.length > 0 ? (
             portfolio.tokens.map((token, i) => (
-              <AssetCard key={i} token={token} />
+              <AssetCard key={`${token?.symbol}-${i}`} token={token} />
             ))
           ) : (
             <View style={styles.emptyAssets}>
