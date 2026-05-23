@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, FlatList, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { useWalletStore } from '../../store/walletStore';
+import { useAccountStore } from '../../store/walletStore';
 import { COLORS, SPACING, TYPOGRAPHY } from '../../constants/Theme';
 import { apiClient } from '../../api/client';
 import ChatBubble from '../../components/ChatBubble';
@@ -9,11 +9,11 @@ import SuggestionChips from '../../components/SuggestionChips';
 
 export default function ChatScreen() {
   const navigation = useNavigation();
-  const { address } = useWalletStore();
+  const { userId } = useAccountStore();
   const [messages, setMessages] = useState<any[]>([
     { 
       id: '1', 
-      text: "Ask anything about your crypto portfolio. I can explain your risk, movement, and performance.", 
+      text: "I monitor your custodial portfolio, market exposure, risk, and opportunities. Ask me what changed and what deserves attention.", 
       isUser: false 
     }
   ]);
@@ -22,10 +22,10 @@ export default function ChatScreen() {
   const flatListRef = useRef<FlatList>(null);
 
   const suggestions = [
-    "Why is my portfolio down?",
+    "What changed today?",
+    "Analyze my risk level",
     "Am I too exposed to ETH?",
-    "What should I do now?",
-    "Analyze my risk level"
+    "Summarize my portfolio"
   ];
 
   const handleSend = async (text: string) => {
@@ -37,7 +37,7 @@ export default function ChatScreen() {
     setLoading(true);
 
     try {
-      const response = await apiClient.post('/ai/chat', { address, message: text });
+      const response = await apiClient.post('/ai/chat', { userId, message: text });
       const data = response.data;
       
       const aiMsg = { 
@@ -66,8 +66,8 @@ export default function ChatScreen() {
           <Text style={styles.backText}>Close</Text>
         </TouchableOpacity>
         <View style={styles.headerInfo}>
-          <Text style={styles.headerTitle}>Financial Assistant</Text>
-          <Text style={styles.headerSubtitle}>Portfolio-aware • Real-time</Text>
+          <Text style={styles.headerTitle}>Cryptofy Intelligence</Text>
+          <Text style={styles.headerSubtitle}>Portfolio-aware - Real-time</Text>
         </View>
         <View style={{ width: 50 }} />
       </View>

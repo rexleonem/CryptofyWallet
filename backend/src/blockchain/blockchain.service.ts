@@ -32,10 +32,6 @@ export class BlockchainService {
     return this.callWithRetry(() => this.getProvider().getFeeData());
   }
 
-  async broadcastTransaction(signedTx: string) {
-    return this.callWithRetry(() => this.getProvider().broadcastTransaction(signedTx));
-  }
-
   async getTransactionReceipt(hash: string) {
     return this.callWithRetry(() => this.getProvider().getTransactionReceipt(hash));
   }

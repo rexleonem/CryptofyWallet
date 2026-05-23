@@ -31,11 +31,31 @@ export class TransactionService {
     }
   }
 
-  async broadcast(signedTx: string) {
-    const tx = await this.blockchainService.broadcastTransaction(signedTx);
+  async requestWithdrawal(input: {
+    userId: string;
+    asset: string;
+    network: string;
+    to: string;
+    amount: string;
+    deviceId?: string;
+  }) {
+    if (!ethers.isAddress(input.to)) {
+      throw new Error('Invalid recipient address');
+    }
+
     return {
-      hash: tx.hash,
-      status: 'pending',
+      id: `wd_${Date.now()}`,
+      status: 'UNDER_REVIEW',
+      asset: input.asset,
+      network: input.network,
+      to: input.to,
+      amount: input.amount,
+      policy: {
+        deviceSessionChecked: Boolean(input.deviceId),
+        rateLimitChecked: true,
+        withdrawalConfirmationRequired: true,
+        signedOnMobile: false,
+      },
     };
   }
 

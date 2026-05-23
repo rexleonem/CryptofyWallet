@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, TextInput, ScrollView, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { ethers } from 'ethers';
 import { COLORS, SPACING, TYPOGRAPHY } from '../../constants/Theme';
 import GasEstimateCard from '../../components/GasEstimateCard';
+import { isEthereumAddress } from '../../utils/address';
 
 export default function SendScreen() {
   const navigation = useNavigation<any>();
@@ -14,7 +14,7 @@ export default function SendScreen() {
   const [isValidAddress, setIsValidAddress] = useState(false);
 
   useEffect(() => {
-    setIsValidAddress(ethers.isAddress(recipient));
+    setIsValidAddress(isEthereumAddress(recipient));
   }, [recipient]);
 
   const handleReview = () => {
@@ -41,13 +41,13 @@ export default function SendScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Text style={styles.backText}>Cancel</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Send ETH</Text>
+        <Text style={styles.headerTitle}>Request withdrawal</Text>
         <View style={{ width: 50 }} />
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>To:</Text>
+          <Text style={styles.label}>Recipient address</Text>
           <View style={[styles.inputBox, recipient && !isValidAddress && styles.errorInput]}>
             <TextInput
               style={styles.input}
@@ -62,7 +62,7 @@ export default function SendScreen() {
         </View>
 
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Amount:</Text>
+          <Text style={styles.label}>Amount</Text>
           <View style={styles.inputBox}>
             <TextInput
               style={[styles.input, { fontSize: 24, fontWeight: 'bold' }]}
@@ -86,11 +86,11 @@ export default function SendScreen() {
 
         <View style={styles.summaryCard}>
           <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>You send</Text>
+            <Text style={styles.summaryLabel}>Withdrawal request</Text>
             <Text style={styles.summaryValue}>{amount || '0'} ETH</Text>
           </View>
           <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Gas Fee</Text>
+            <Text style={styles.summaryLabel}>Estimated network fee</Text>
             <Text style={styles.summaryValue}>{estimates[speed]} ETH</Text>
           </View>
           <View style={[styles.summaryRow, styles.totalRow]}>
@@ -108,7 +108,7 @@ export default function SendScreen() {
           onPress={handleReview}
           disabled={!isValidAddress || !amount}
         >
-          <Text style={styles.buttonText}>Review Transaction</Text>
+          <Text style={styles.buttonText}>Review withdrawal</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -143,7 +143,7 @@ const styles = StyleSheet.create({
   label: {
     ...TYPOGRAPHY.small,
     fontWeight: 'bold',
-    marginBottom: SPACING.base,
+    marginBottom: SPACING.s,
     color: COLORS.textPrimary,
   },
   inputBox: {

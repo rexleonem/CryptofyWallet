@@ -46,16 +46,16 @@ export class OfferService {
     });
 
     if (offers.length === 0 && !filters.asset && !filters.type) {
-      return this.getSeedData();
+      return this.getDemoOffers();
     }
 
     return offers;
   }
 
-  private getSeedData() {
+  private getDemoOffers() {
     return [
       {
-        id: 'seed-1',
+        id: 'demo-offer-1',
         type: 'SELL',
         asset: 'ETH',
         price: 2650.40,
@@ -66,7 +66,7 @@ export class OfferService {
         status: 'ACTIVE'
       },
       {
-        id: 'seed-2',
+        id: 'demo-offer-2',
         type: 'BUY',
         asset: 'BTC',
         price: 48200.00,
@@ -77,7 +77,7 @@ export class OfferService {
         status: 'ACTIVE'
       },
       {
-        id: 'seed-3',
+        id: 'demo-offer-3',
         type: 'SELL',
         asset: 'USDT',
         price: 1.01,
@@ -88,7 +88,7 @@ export class OfferService {
         status: 'ACTIVE'
       },
       {
-        id: 'seed-4',
+        id: 'demo-offer-4',
         type: 'SELL',
         asset: 'BNB',
         price: 312.50,
@@ -102,8 +102,8 @@ export class OfferService {
   }
 
   async findOne(id: string) {
-    if (id.startsWith('seed-')) {
-      return this.getSeedData().find(o => o.id === id);
+    if (id.startsWith('demo-offer-')) {
+      return this.getDemoOffers().find(o => o.id === id);
     }
     return this.prisma.offer.findUnique({
       where: { id },

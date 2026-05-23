@@ -10,9 +10,11 @@ export class TransactionController {
     return this.transactionService.getGasEstimate(body.to, body.amount);
   }
 
-  @Post('broadcast')
-  async broadcast(@Body() body: { signedTx: string }) {
-    return this.transactionService.broadcast(body.signedTx);
+  @Post('withdrawals')
+  async requestWithdrawal(
+    @Body() body: { userId: string; asset: string; network: string; to: string; amount: string; deviceId?: string },
+  ) {
+    return this.transactionService.requestWithdrawal(body);
   }
 
   @Get('status/:hash')

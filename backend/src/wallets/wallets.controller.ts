@@ -11,12 +11,17 @@ export class WalletsController {
   }
   
   @Post('create')
-  async createWallet(@Body() body: { userId: string, address: string, label: string, network?: string }) {
-    return this.walletsService.createWallet(body.userId, body.address, body.label, body.network);
+  async createWallet(@Body() body: { userId: string, label?: string, network?: string }) {
+    return this.walletsService.createWallet(body.userId, body.label, body.network);
   }
 
   @Get('user/:userId')
   async getUserWallets(@Param('userId') userId: string) {
     return this.walletsService.findByUserId(userId);
+  }
+
+  @Get('custody/:userId')
+  async getCustodyProfile(@Param('userId') userId: string) {
+    return this.walletsService.getCustodyProfile(userId);
   }
 }

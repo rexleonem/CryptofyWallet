@@ -14,13 +14,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { COLORS, SPACING, TYPOGRAPHY } from '../../constants/Theme';
 import { fetchP2POffers, P2POffer } from '../../api/p2p';
-import { 
-  Search, 
-  Filter, 
-  User, 
-  ShieldCheck,
-  CreditCard
-} from 'lucide-react-native';
+import TextIcon from '../../components/TextIcon';
 
 const P2PMarketplace = () => {
   const [offers, setOffers] = useState<P2POffer[]>([]);
@@ -72,9 +66,9 @@ const P2PMarketplace = () => {
             <View>
               <View style={styles.nameRow}>
                 <Text style={styles.userName}>{userName}</Text>
-                {rating >= 4.8 && <ShieldCheck size={14} color={COLORS.secondary} />}
+                {rating >= 4.8 && <TextIcon label="OK" size={11} color={COLORS.secondary} />}
               </View>
-              <Text style={styles.userStats}>{trades} trades • {Math.round(rating * 20)}% completion</Text>
+              <Text style={styles.userStats}>{trades} trades - {Math.round(rating * 20)}% completion</Text>
             </View>
           </View>
           <View style={[styles.typeBadge, type === 'SELL' ? styles.sellBadge : styles.buyBadge]}>
@@ -99,7 +93,7 @@ const P2PMarketplace = () => {
           <View style={styles.paymentMethods}>
             {paymentMethods.slice(0, 2).map((m, i) => (
               <View key={i} style={styles.methodBadge}>
-                <CreditCard size={12} color={COLORS.textMuted} />
+                <TextIcon label="#" size={12} color={COLORS.textMuted} />
                 <Text style={styles.methodText}>{m}</Text>
               </View>
             ))}
@@ -125,7 +119,7 @@ const P2PMarketplace = () => {
 
       <View style={styles.searchContainer}>
         <View style={styles.searchBar}>
-          <Search size={20} color={COLORS.textMuted} />
+          <TextIcon label="?" size={18} color={COLORS.textMuted} />
           <TextInput 
             placeholder="Search assets or users..." 
             placeholderTextColor={COLORS.textMuted}
@@ -133,7 +127,7 @@ const P2PMarketplace = () => {
           />
         </View>
         <TouchableOpacity style={styles.filterIconButton}>
-          <Filter size={20} color={COLORS.textPrimary} />
+          <TextIcon label="F" size={18} color={COLORS.textPrimary} />
         </TouchableOpacity>
       </View>
 

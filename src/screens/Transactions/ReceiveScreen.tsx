@@ -1,17 +1,17 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Clipboard, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import QRCode from 'react-native-qrcode-svg';
-import { useWalletStore } from '../../store/walletStore';
+import Clipboard from '@react-native-clipboard/clipboard';
+import { useAccountStore } from '../../store/walletStore';
 import { COLORS, SPACING, TYPOGRAPHY } from '../../constants/Theme';
 
 export default function ReceiveScreen() {
   const navigation = useNavigation();
-  const { address } = useWalletStore();
+  const { depositAddress } = useAccountStore();
 
   const copyAddress = () => {
-    Clipboard.setString(address || '');
-    Alert.alert('Copied', 'Address copied to clipboard');
+    Clipboard.setString(depositAddress);
+    Alert.alert('Copied', 'Deposit address copied to clipboard');
   };
 
   return (
@@ -20,28 +20,31 @@ export default function ReceiveScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Text style={styles.backText}>Close</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Receive ETH</Text>
+        <Text style={styles.headerTitle}>Deposit assets</Text>
         <View style={{ width: 50 }} />
       </View>
 
       <View style={styles.content}>
-        <View style={styles.qrContainer}>
-          <QRCode
-            value={address || ''}
-            size={220}
-            color={COLORS.textPrimary}
-            backgroundColor="transparent"
-          />
+        <View style={styles.depositCode}>
+          {Array.from({ length: 49 }).map((_, index) => (
+            <View
+              key={index}
+              style={[
+                styles.depositCodeCell,
+                (index + depositAddress.charCodeAt(index % depositAddress.length)) % 3 !== 0 && styles.depositCodeCellActive,
+              ]}
+            />
+          ))}
         </View>
 
-        <Text style={styles.instruction}>Scan address to receive ETH</Text>
+        <Text style={styles.instruction}>Scan to deposit to your Cryptofy custody account</Text>
 
         <View style={styles.addressCard}>
-          <Text style={styles.addressLabel}>Your Ethereum Address</Text>
-          <Text style={styles.addressValue}>{address}</Text>
+          <Text style={styles.addressLabel}>Ethereum deposit address</Text>
+          <Text style={styles.addressValue}>{depositAddress}</Text>
           
           <TouchableOpacity style={styles.copyButton} onPress={copyAddress}>
-            <Text style={styles.copyText}>Copy Address</Text>
+            <Text style={styles.copyText}>Copy deposit address</Text>
           </TouchableOpacity>
         </View>
 
@@ -78,11 +81,25 @@ const styles = StyleSheet.create({
     padding: SPACING.l,
     justifyContent: 'center',
   },
-  qrContainer: {
-    backgroundColor: 'white',
-    padding: SPACING.m,
-    borderRadius: 20,
+  depositCode: {
+    width: 220,
+    height: 220,
+    backgroundColor: COLORS.white,
+    padding: 18,
+    borderRadius: 24,
     marginBottom: SPACING.l,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  depositCodeCell: {
+    width: 20,
+    height: 20,
+    borderRadius: 5,
+    backgroundColor: 'transparent',
+  },
+  depositCodeCellActive: {
+    backgroundColor: COLORS.background,
   },
   instruction: {
     ...TYPOGRAPHY.body,

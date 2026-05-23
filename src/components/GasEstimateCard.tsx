@@ -66,7 +66,7 @@ const styles = StyleSheet.create({
   },
   option: {
     flex: 0.31,
-    padding: SPACING.base,
+    padding: SPACING.s,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: 'transparent',

@@ -17,14 +17,7 @@ import { COLORS, SPACING, TYPOGRAPHY } from '../../constants/Theme';
 import { fetchPortfolioSummary, fetchPortfolioHistory, PortfolioSummary } from '../../api/portfolio';
 import PortfolioChart from '../../components/PortfolioChart';
 import TokenRow from '../../components/TokenRow';
-import { 
-  TrendingUp, 
-  TrendingDown, 
-  Sparkles, 
-  Target, 
-  ArrowUpRight,
-  Filter
-} from 'lucide-react-native';
+import TextIcon from '../../components/TextIcon';
 
 export default function PortfolioHomeScreen() {
   const navigation = useNavigation<any>();
@@ -85,7 +78,7 @@ export default function PortfolioHomeScreen() {
       <View style={styles.header}>
         <Text style={TYPOGRAPHY.h2}>Portfolio</Text>
         <TouchableOpacity style={styles.filterButton}>
-          <Filter size={18} color={COLORS.textPrimary} />
+          <TextIcon label="F" size={18} color={COLORS.textPrimary} />
         </TouchableOpacity>
       </View>
 
@@ -99,7 +92,7 @@ export default function PortfolioHomeScreen() {
           <Text style={styles.summaryValue}>${parseFloat(portfolio?.totalValue || '0').toLocaleString()}</Text>
           <View style={styles.performanceRow}>
             <View style={[styles.badge, { backgroundColor: isPositive ? `${COLORS.success}15` : `${COLORS.error}15` }]}>
-              {isPositive ? <TrendingUp size={14} color={COLORS.success} /> : <TrendingDown size={14} color={COLORS.error} />}
+              <TextIcon label={isPositive ? '+' : '-'} size={14} color={isPositive ? COLORS.success : COLORS.error} />
               <Text style={[styles.badgeText, { color: isPositive ? COLORS.success : COLORS.error }]}>
                 {isPositive ? '+' : ''}{change}%
               </Text>
@@ -127,7 +120,7 @@ export default function PortfolioHomeScreen() {
 
         <View style={styles.aiSection}>
           <View style={styles.sectionHeaderRow}>
-            <Sparkles size={20} color={COLORS.accent} />
+            <TextIcon label="AI" size={16} color={COLORS.accent} />
             <Text style={styles.sectionTitle}>AI Insights</Text>
           </View>
           <TouchableOpacity 
@@ -138,12 +131,12 @@ export default function PortfolioHomeScreen() {
               <Text style={styles.insightTitle}>Portfolio Diversification</Text>
               <Text style={styles.insightMessage}>Consider diversifying your assets across different chains for better risk management.</Text>
             </View>
-            <ArrowUpRight size={20} color={COLORS.textMuted} />
+            <TextIcon label=">" size={20} color={COLORS.textMuted} />
           </TouchableOpacity>
         </View>
 
         <View style={styles.sectionHeaderRow}>
-          <Target size={20} color={COLORS.primary} />
+          <TextIcon label="%" size={20} color={COLORS.primary} />
           <Text style={styles.sectionTitle}>Asset Allocation</Text>
         </View>
 

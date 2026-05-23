@@ -1,29 +1,28 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView } from 'react-native';
-import { useWalletStore } from '../../store/walletStore';
+import { useAccountStore } from '../../store/walletStore';
 import { COLORS, SPACING, TYPOGRAPHY } from '../../constants/Theme';
 import { APP_VERSION, APP_BUILD } from '../../constants/Config';
-import { Settings as SettingsIcon, ChevronRight, Lock, Shield, Bell, CircleHelp, LogOut, User } from 'lucide-react-native';
+import TextIcon from '../../components/TextIcon';
 
 export default function SettingsScreen() {
-  const { address, setAddress, setUnlocked } = useWalletStore();
+  const { depositAddress, email, name, signOut } = useAccountStore();
 
   const logout = () => {
-    setAddress('');
-    setUnlocked(false);
+    signOut();
   };
 
-  const SettingItem = ({ icon: Icon, title, value, onPress, color = COLORS.textPrimary }: any) => (
+  const SettingItem = ({ icon, title, value, onPress, color = COLORS.textPrimary }: any) => (
     <TouchableOpacity style={styles.item} onPress={onPress}>
       <View style={styles.itemLeft}>
         <View style={[styles.iconContainer, { backgroundColor: `${color}15` }]}>
-          <Icon size={20} color={color} />
+          <TextIcon label={icon} size={16} color={color} />
         </View>
         <Text style={[styles.itemTitle, { color }]}>{title}</Text>
       </View>
       <View style={styles.itemRight}>
         {value && <Text style={styles.itemValue}>{value}</Text>}
-        <ChevronRight size={20} color={COLORS.textMuted} />
+        <TextIcon label=">" size={18} color={COLORS.textMuted} />
       </View>
     </TouchableOpacity>
   );
@@ -37,29 +36,32 @@ export default function SettingsScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.profileSection}>
           <View style={styles.avatar}>
-            <User size={32} color={COLORS.primary} />
+            <TextIcon label="R" size={28} color={COLORS.primary} />
           </View>
           <Text style={styles.addressText} numberOfLines={1} ellipsizeMode="middle">
-            {address}
+            {name} {email ? `- ${email}` : ''}
           </Text>
+          <Text style={styles.custodyText} numberOfLines={1} ellipsizeMode="middle">{depositAddress}</Text>
         </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Account</Text>
-          <SettingItem icon={Shield} title="Security & Privacy" onPress={() => {}} />
-          <SettingItem icon={Bell} title="Notifications" value="On" onPress={() => {}} />
-          <SettingItem icon={Lock} title="App Lock" value="Enabled" onPress={() => {}} />
+          <SettingItem icon="S" title="Security & Privacy" onPress={() => {}} />
+          <SettingItem icon="D" title="Device sessions" value="1 active" onPress={() => {}} />
+          <SettingItem icon="!" title="Notifications" value="On" onPress={() => {}} />
+          <SettingItem icon="L" title="Biometric unlock" value="Enabled" onPress={() => {}} />
         </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Support</Text>
-          <SettingItem icon={CircleHelp} title="Help Center" onPress={() => {}} />
-          <SettingItem icon={SettingsIcon} title="About Cryptofy" onPress={() => {}} />
+          <SettingItem icon="C" title="Custody & withdrawals" value="Protected" onPress={() => {}} />
+          <SettingItem icon="?" title="Help Center" onPress={() => {}} />
+          <SettingItem icon="*" title="About Cryptofy" onPress={() => {}} />
         </View>
 
         <View style={styles.section}>
           <SettingItem 
-            icon={LogOut} 
+            icon="X" 
             title="Log Out" 
             color={COLORS.error} 
             onPress={logout} 
@@ -106,8 +108,15 @@ const styles = StyleSheet.create({
   addressText: {
     ...TYPOGRAPHY.small,
     color: COLORS.textMuted,
-    width: 200,
+    width: '90%',
     textAlign: 'center',
+  },
+  custodyText: {
+    ...TYPOGRAPHY.small,
+    width: '90%',
+    textAlign: 'center',
+    color: COLORS.primaryLight,
+    marginTop: 6,
   },
   section: {
     marginBottom: SPACING.xl,

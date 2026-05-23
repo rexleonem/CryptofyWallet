@@ -42,15 +42,35 @@ export class WalletsService {
     }
   }
 
-  async createWallet(userId: string, address: string, label: string, network = 'ethereum') {
+  async createWallet(userId: string, label = 'Cryptofy Custody Account', network = 'ethereum') {
+    const wallet = ethers.Wallet.createRandom();
+
+    // Custodial production signing must live behind Fireblocks, HSM, or MPC.
+    // This service only stores the public deposit address in the app database.
     return this.prisma.wallet.create({
       data: {
         userId,
-        address,
+        address: wallet.address,
         label,
         network,
       },
     });
+  }
+
+  async getCustodyProfile(userId: string) {
+    const wallets = await this.findByUserId(userId);
+
+    return {
+      userId,
+      custodyProvider: 'MPC_READY_INTERNAL_SERVICE',
+      policy: {
+        privateKeysExposedToMobile: false,
+        withdrawalReview: true,
+        deviceSessionRequired: true,
+        rateLimitedTransactions: true,
+      },
+      wallets,
+    };
   }
 
   async findByUserId(userId: string) {

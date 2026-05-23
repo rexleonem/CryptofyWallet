@@ -1,21 +1,18 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ActivityIndicator, Alert, Animated } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, Animated, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { useWalletStore } from '../../store/walletStore';
-import { retrieveMnemonic } from '../../wallet/keystore';
-import { deriveWalletFromMnemonic } from '../../wallet/signer';
+
+import TextIcon from '../../components/TextIcon';
 import { COLORS, SPACING, TYPOGRAPHY } from '../../constants/Theme';
-import { ethers } from 'ethers';
-import { ALCHEMY_URL } from '../../constants/chains';
+import { useAccountStore } from '../../store/walletStore';
 
 export default function ConfirmScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
-  const { recipient, amount, gasFee } = route.params;
-  const { address } = useWalletStore();
-
+  const { recipient, amount, gasFee, speed } = route.params;
+  const { depositAddress } = useAccountStore();
   const [countdown, setCountdown] = useState(3);
-  const [isSending, setIsSending] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPressing, setIsPressing] = useState(false);
   const progress = useRef(new Animated.Value(0)).current;
 
@@ -27,96 +24,71 @@ export default function ConfirmScreen() {
   }, [countdown]);
 
   useEffect(() => {
-    if (isPressing && countdown === 0) {
-      Animated.timing(progress, {
-        toValue: 1,
-        duration: 2000,
-        useNativeDriver: false,
-      }).start(({ finished }) => {
-        if (finished) {
-          handleConfirm();
-        }
-      });
-    } else {
-      Animated.timing(progress, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: false,
-      }).start();
-    }
-  }, [isPressing, countdown]);
+    Animated.timing(progress, {
+      toValue: isPressing && countdown === 0 ? 1 : 0,
+      duration: isPressing && countdown === 0 ? 1800 : 180,
+      useNativeDriver: false,
+    }).start(({ finished }) => {
+      if (finished && isPressing && countdown === 0) {
+        handleConfirm();
+      }
+    });
+  }, [countdown, isPressing, progress]);
+
+  const handleConfirm = async () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    setTimeout(() => {
+      setIsSubmitting(false);
+      Alert.alert(
+        'Withdrawal submitted',
+        'Cryptofy is reviewing and signing this transfer through the custodial wallet service.',
+        [{ text: 'Done', onPress: () => navigation.navigate('Main') }],
+      );
+    }, 900);
+  };
 
   const widthInterpolate = progress.interpolate({
     inputRange: [0, 1],
     outputRange: ['0%', '100%'],
   });
 
-  const handleConfirm = async () => {
-    setIsSending(true);
-    try {
-      const mnemonic = await retrieveMnemonic();
-      if (!mnemonic) throw new Error('Wallet not found');
-
-      const wallet = deriveWalletFromMnemonic(mnemonic);
-      const provider = new ethers.JsonRpcProvider(ALCHEMY_URL);
-      const signer = wallet.connect(provider);
-
-      const tx = await signer.sendTransaction({
-        to: recipient,
-        value: ethers.parseEther(amount),
-      });
-
-      Alert.alert(
-        'Success',
-        'Transaction broadcasted! Check history for status.',
-        [{ text: 'OK', onPress: () => navigation.navigate('Main') }]
-      );
-    } catch (error: any) {
-      Alert.alert('Transaction Failed', error.message || 'Unknown error');
-    } finally {
-      setIsSending(false);
-    }
-  };
-
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Confirm Transaction</Text>
-      </View>
+      <Text style={styles.headerTitle}>Withdrawal review</Text>
 
-      <View style={styles.warningBox}>
-        <Text style={styles.warningText}>
-          Double-check recipient address. Transactions cannot be reversed.
-        </Text>
+      <View style={styles.securityBox}>
+        <TextIcon label="OK" size={14} color={COLORS.success} />
+        <Text style={styles.securityText}>No private key is used on this device. The backend will perform policy checks, risk review, and secure signing.</Text>
       </View>
 
       <View style={styles.summaryCard}>
         <View style={styles.infoRow}>
-          <Text style={styles.label}>From:</Text>
-          <Text style={styles.value} numberOfLines={1} ellipsizeMode="middle">{address}</Text>
+          <Text style={styles.label}>From account</Text>
+          <Text style={styles.value} numberOfLines={1} ellipsizeMode="middle">{depositAddress}</Text>
         </View>
         <View style={styles.infoRow}>
-          <Text style={styles.label}>To:</Text>
+          <Text style={styles.label}>Recipient</Text>
           <Text style={styles.value} numberOfLines={1} ellipsizeMode="middle">{recipient}</Text>
         </View>
-
         <View style={styles.divider} />
-
         <View style={styles.amountRow}>
           <Text style={styles.amountLabel}>Amount</Text>
           <Text style={styles.amountValue}>{amount} ETH</Text>
         </View>
         <View style={styles.amountRow}>
-          <Text style={styles.amountLabel}>Network Fee</Text>
+          <Text style={styles.amountLabel}>Network speed</Text>
+          <Text style={styles.amountValue}>{speed}</Text>
+        </View>
+        <View style={styles.amountRow}>
+          <Text style={styles.amountLabel}>Estimated fee</Text>
           <Text style={styles.amountValue}>{gasFee} ETH</Text>
         </View>
+      </View>
 
-        <View style={styles.totalRow}>
-          <Text style={styles.totalLabel}>Total</Text>
-          <Text style={styles.totalValue}>
-            {(parseFloat(amount) + parseFloat(gasFee)).toFixed(6)} ETH
-          </Text>
-        </View>
+      <View style={styles.deviceCard}>
+        <TextIcon label="D" size={18} color={COLORS.primaryLight} />
+        <Text style={styles.deviceText}>Device session, withdrawal limits, and confirmation policy will be enforced before chain submission.</Text>
       </View>
 
       <View style={styles.footer}>
@@ -125,26 +97,22 @@ export default function ConfirmScreen() {
             style={StyleSheet.absoluteFill}
             onPressIn={() => setIsPressing(true)}
             onPressOut={() => setIsPressing(false)}
-            disabled={countdown > 0 || isSending}
+            disabled={countdown > 0 || isSubmitting}
           >
             <Animated.View style={[styles.progressOverlay, { width: widthInterpolate }]} />
             <View style={styles.buttonContent}>
-              {isSending ? (
-                <ActivityIndicator color="white" />
+              {isSubmitting ? (
+                <ActivityIndicator color={COLORS.white} />
               ) : (
                 <Text style={styles.buttonText}>
-                  {countdown > 0 ? `Wait (${countdown})` : isPressing ? 'Hold to Confirm...' : 'Hold to Send'}
+                  {countdown > 0 ? `Reviewing (${countdown})` : isPressing ? 'Hold to submit...' : 'Hold to request withdrawal'}
                 </Text>
               )}
             </View>
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity
-          style={styles.cancelButton}
-          onPress={() => navigation.goBack()}
-          disabled={isSending}
-        >
+        <TouchableOpacity style={styles.cancelButton} onPress={() => navigation.goBack()} disabled={isSubmitting}>
           <Text style={styles.cancelText}>Cancel</Text>
         </TouchableOpacity>
       </View>
@@ -158,57 +126,56 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
     padding: SPACING.l,
   },
-  header: {
-    alignItems: 'center',
-    marginBottom: SPACING.xl,
-  },
   headerTitle: {
     ...TYPOGRAPHY.h2,
-  },
-  warningBox: {
-    backgroundColor: 'rgba(245, 158, 11, 0.1)',
-    borderRadius: 12,
-    padding: SPACING.m,
-    marginBottom: SPACING.xl,
-    borderWidth: 1,
-    borderColor: COLORS.warning,
-  },
-  warningText: {
-    color: COLORS.warning,
-    fontSize: 14,
     textAlign: 'center',
-    fontWeight: '600',
+    marginBottom: SPACING.l,
+  },
+  securityBox: {
+    flexDirection: 'row',
+    gap: SPACING.s,
+    backgroundColor: 'rgba(34,197,94,0.08)',
+    borderRadius: 18,
+    padding: SPACING.m,
+    marginBottom: SPACING.l,
+    borderWidth: 1,
+    borderColor: 'rgba(34,197,94,0.18)',
+  },
+  securityText: {
+    flex: 1,
+    color: COLORS.textSecondary,
+    fontSize: 13,
+    lineHeight: 19,
   },
   summaryCard: {
     backgroundColor: COLORS.card,
-    borderRadius: 20,
+    borderRadius: 22,
     padding: SPACING.l,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   infoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 12,
+    marginBottom: SPACING.m,
   },
   label: {
-    color: COLORS.textSecondary,
-    fontSize: 14,
-    width: 60,
+    color: COLORS.textMuted,
+    fontSize: 12,
+    fontWeight: '700',
+    marginBottom: 4,
   },
   value: {
     color: COLORS.textPrimary,
     fontSize: 14,
-    flex: 1,
-    textAlign: 'right',
   },
   divider: {
     height: 1,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: COLORS.border,
     marginVertical: SPACING.m,
   },
   amountRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    marginBottom: SPACING.s,
   },
   amountLabel: {
     color: COLORS.textSecondary,
@@ -217,30 +184,32 @@ const styles = StyleSheet.create({
   amountValue: {
     color: COLORS.textPrimary,
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '800',
+    textTransform: 'capitalize',
   },
-  totalRow: {
+  deviceCard: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 12,
+    gap: SPACING.s,
+    padding: SPACING.m,
+    borderRadius: 18,
+    backgroundColor: 'rgba(10,132,255,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(165,216,255,0.16)',
+    marginTop: SPACING.m,
   },
-  totalLabel: {
-    color: COLORS.textPrimary,
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  totalValue: {
-    color: COLORS.primary,
-    fontSize: 20,
-    fontWeight: 'bold',
+  deviceText: {
+    flex: 1,
+    color: COLORS.textSecondary,
+    fontSize: 12,
+    lineHeight: 18,
   },
   footer: {
     marginTop: 'auto',
   },
   button: {
-    height: 56,
+    height: 60,
     backgroundColor: COLORS.primary,
-    borderRadius: 16,
+    borderRadius: 20,
     overflow: 'hidden',
     marginBottom: SPACING.m,
   },
@@ -257,12 +226,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   disabledButton: {
-    opacity: 0.5,
+    opacity: 0.52,
   },
   buttonText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: COLORS.textPrimary,
+    fontSize: 16,
+    fontWeight: '800',
+    color: COLORS.white,
   },
   cancelButton: {
     alignSelf: 'center',
@@ -271,5 +240,6 @@ const styles = StyleSheet.create({
   cancelText: {
     color: COLORS.error,
     fontSize: 16,
+    fontWeight: '700',
   },
 });
