@@ -1,118 +1,285 @@
-import React from 'react';
-import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Alert, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 
+import { apiClient } from '../../api/client';
+import { fetchPortfolioHistory, fetchPortfolioSummary, PortfolioSummary, TokenAsset } from '../../api/portfolio';
 import PortfolioChart from '../../components/PortfolioChart';
-import TextIcon from '../../components/TextIcon';
+import Skeleton from '../../components/Skeleton';
+import { CryptofyIcon, CryptofyIconName } from '../../components/icons';
 import { COLORS, SPACING, TYPOGRAPHY } from '../../constants/Theme';
 import { useAccountStore } from '../../store/walletStore';
 
-const chartData = [10300, 10840, 10520, 11280, 11740, 11490, 12482];
-const holdings = [
-  { symbol: 'BTC', name: 'Bitcoin', allocation: '42%', value: '$5,242.88', change: '+2.8%' },
-  { symbol: 'ETH', name: 'Ethereum', allocation: '31%', value: '$3,869.48', change: '+5.4%' },
-  { symbol: 'USDC', name: 'USD Coin', allocation: '18%', value: '$2,246.80', change: '+0.0%' },
-];
+interface AiInsight {
+  title?: string;
+  text?: string;
+  message?: string;
+}
+
+const timeFilters = ['24H', '7D', '1M', '1Y'];
+
+const formatCurrency = (value: string | null) => {
+  if (!value) return null;
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return null;
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(numeric);
+};
+
+const formatPercent = (value: number | null) => {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return null;
+  return `${value > 0 ? '+' : ''}${value.toFixed(2)}% today`;
+};
+
+function ActionButton({
+  icon,
+  label,
+  onPress,
+}: {
+  icon: CryptofyIconName;
+  label: string;
+  onPress: () => void;
+}) {
+  const press = useSharedValue(1);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: press.value }],
+  }));
+
+  return (
+    <Pressable
+      onPress={onPress}
+      onPressIn={() => {
+        press.value = withSpring(0.95, { damping: 16, stiffness: 220 });
+      }}
+      onPressOut={() => {
+        press.value = withSpring(1, { damping: 16, stiffness: 220 });
+      }}
+      style={styles.actionPressable}
+    >
+      <Animated.View style={[styles.action, animatedStyle]}>
+        <View style={styles.actionIcon}>
+          <CryptofyIcon name={icon} size={23} color={COLORS.primaryLight} />
+        </View>
+        <Text style={styles.actionText}>{label}</Text>
+      </Animated.View>
+    </Pressable>
+  );
+}
 
 export default function DashboardScreen() {
   const navigation = useNavigation<any>();
-  const { name } = useAccountStore();
+  const { name, address, email } = useAccountStore();
+  const [portfolio, setPortfolio] = useState<PortfolioSummary | null>(null);
+  const [history, setHistory] = useState<number[]>([]);
+  const [insight, setInsight] = useState<AiInsight | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [balancesVisible, setBalancesVisible] = useState(true);
+  const [selectedRange, setSelectedRange] = useState('7D');
+  const glow = useSharedValue(0);
 
-  const QuickAction = ({ icon, label, onPress }: any) => (
-    <TouchableOpacity style={styles.action} onPress={onPress} activeOpacity={0.82}>
-      <TextIcon label={icon} size={21} color={COLORS.primaryLight} />
-      <Text style={styles.actionText}>{label}</Text>
-    </TouchableOpacity>
-  );
+  useEffect(() => {
+    glow.value = withTiming(1, { duration: 1600 });
+  }, [glow]);
+
+  const cardGlowStyle = useAnimatedStyle(() => ({
+    opacity: 0.18 + glow.value * 0.1,
+    transform: [{ translateX: glow.value * 18 }],
+  }));
+
+  const loadDashboard = useCallback(async () => {
+    if (!address) {
+      setPortfolio(null);
+      setHistory([]);
+      setInsight(null);
+      setError(null);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const [summary, chart, aiResponse] = await Promise.all([
+        fetchPortfolioSummary(address),
+        fetchPortfolioHistory(address).catch(() => []),
+        apiClient.get(`/ai/portfolio/${address}`).then(response => response.data).catch(() => null),
+      ]);
+
+      setPortfolio(summary);
+      setHistory(chart);
+      setInsight(aiResponse?.insights?.[0] || aiResponse || null);
+    } catch {
+      setError('Portfolio data unavailable');
+      setPortfolio(null);
+      setHistory([]);
+      setInsight(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [address]);
+
+  useEffect(() => {
+    loadDashboard();
+  }, [loadDashboard]);
+
+  const totalValue = formatCurrency(portfolio?.totalValue ?? null);
+  const dailyChange = formatPercent(portfolio?.change24h ?? null);
+  const tokens = portfolio?.tokens ?? [];
+  const profileInitial = (name?.trim()?.[0] || email?.trim()?.[0] || 'U').toUpperCase();
+  const hasAiNotice = Boolean(insight?.title || insight?.message);
+  const isNegative = portfolio?.change24h !== null && portfolio?.change24h !== undefined && portfolio.change24h < 0;
+
+  const renderToken = (item: TokenAsset) => {
+    const tokenValue = formatCurrency(item.value);
+    const change = formatPercent(item.change24h)?.replace(' today', '');
+    const negativeToken = item.change24h !== null && item.change24h !== undefined && item.change24h < 0;
+
+    return (
+      <Pressable key={`${item.chain}-${item.symbol}`} style={({ pressed }) => [styles.assetRow, pressed && styles.assetRowPressed]}>
+        <View style={styles.tokenIcon}>
+          <Text style={styles.tokenIconText}>{item.symbol.slice(0, 1)}</Text>
+        </View>
+        <View style={styles.assetInfo}>
+          <Text style={styles.assetName}>{item.name || item.symbol}</Text>
+          <Text style={styles.assetMeta}>{item.amount} {item.symbol}</Text>
+        </View>
+        <View style={styles.assetValue}>
+          <Text style={tokenValue ? styles.assetAmount : styles.assetMuted}>
+            {balancesVisible ? tokenValue || 'Value unavailable' : 'Hidden'}
+          </Text>
+          {change && balancesVisible ? (
+            <Text style={[styles.assetChange, negativeToken && styles.negativeChange]}>{change}</Text>
+          ) : null}
+        </View>
+      </Pressable>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
+      <View style={styles.backgroundGlowTop} />
+      <View style={styles.backgroundGlowMid} />
+
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-          <View>
+          <View style={styles.headerCopy}>
             <Text style={styles.greeting}>Good evening, {name}</Text>
-            <Text style={styles.headerSubtext}>AI-managed digital asset banking</Text>
+            <Text style={styles.headerSubtext}>Welcome back</Text>
           </View>
-          <TouchableOpacity style={styles.iconButton}>
-            <TextIcon label="!" size={20} color={COLORS.textPrimary} />
-          </TouchableOpacity>
+          <View style={styles.headerActions}>
+            <TouchableOpacity style={[styles.headerIcon, hasAiNotice && styles.headerIconActive]} onPress={() => navigation.navigate('InsightsDetail')}>
+              <CryptofyIcon name="bell" size={19} color={hasAiNotice ? COLORS.primaryLight : COLORS.textSecondary} />
+              {hasAiNotice ? <View style={styles.unreadDot} /> : null}
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.profileButton} onPress={() => navigation.navigate('Settings')}>
+              <Text style={styles.profileInitial}>{profileInitial}</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
-        <LinearGradient colors={['rgba(10,132,255,0.34)', 'rgba(16,24,42,0.96)']} style={styles.heroCard}>
-          <View style={styles.heroTop}>
-            <View style={styles.heroPill}>
-              <TextIcon label="B" size={14} color={COLORS.primaryLight} />
-              <Text style={styles.heroPillText}>Custodial account</Text>
+        <LinearGradient colors={['rgba(10,132,255,0.24)', 'rgba(16,24,42,0.94)', 'rgba(8,13,26,0.98)']} style={styles.balanceCard}>
+          <Animated.View style={[styles.cardLighting, cardGlowStyle]} />
+          <View style={styles.balanceTopRow}>
+            <Text style={styles.balanceLabel}>Total Portfolio</Text>
+            <TouchableOpacity style={styles.eyeButton} onPress={() => setBalancesVisible(prev => !prev)}>
+              <CryptofyIcon name={balancesVisible ? 'eye' : 'eyeOff'} size={18} color={COLORS.textSecondary} />
+            </TouchableOpacity>
+          </View>
+          {loading ? (
+            <Skeleton width="82%" height={56} borderRadius={16} style={styles.balanceSkeleton} />
+          ) : totalValue ? (
+            <Text style={styles.balance}>{balancesVisible ? totalValue : 'Hidden'}</Text>
+          ) : (
+            <Text style={styles.emptyHeroText}>{address ? 'Portfolio value unavailable' : 'Portfolio will appear after account setup'}</Text>
+          )}
+          {dailyChange && balancesVisible ? (
+            <View style={styles.gainRow}>
+              <View style={[styles.trendPill, isNegative && styles.trendPillNegative]}>
+                <CryptofyIcon name={isNegative ? 'arrowDown' : 'arrowUp'} size={15} color={isNegative ? COLORS.error : COLORS.success} />
+                <Text style={[styles.gainText, isNegative && styles.negativeChange]}>{dailyChange}</Text>
+              </View>
             </View>
-            <TextIcon label="O" size={18} color={COLORS.textSecondary} />
-          </View>
-          <Text style={styles.balanceLabel}>Portfolio value</Text>
-          <Text style={styles.balance}>$12,482.20</Text>
-          <View style={styles.gainRow}>
-            <TextIcon label="+" size={16} color={COLORS.success} />
-            <Text style={styles.gainText}>+4.21% today</Text>
-          </View>
+          ) : null}
         </LinearGradient>
 
+        {error ? (
+          <TouchableOpacity style={styles.errorCard} onPress={loadDashboard}>
+            <Text style={styles.errorTitle}>{error}</Text>
+            <Text style={styles.errorText}>Tap to retry.</Text>
+          </TouchableOpacity>
+        ) : null}
+
         <View style={styles.actionRow}>
-          <QuickAction icon=">" label="Send" onPress={() => navigation.navigate('Send')} />
-          <QuickAction icon="<" label="Deposit" onPress={() => navigation.navigate('Receive')} />
-          <QuickAction icon="#" label="Card" onPress={() => {}} />
+          <ActionButton icon="send" label="Send" onPress={() => navigation.navigate('Send')} />
+          <ActionButton icon="arrowDown" label="Receive" onPress={() => navigation.navigate('Receive')} />
+          <ActionButton icon="buy" label="Buy" onPress={() => Alert.alert('Buy unavailable', 'Buy will appear when live payment rails are enabled.')} />
+          <ActionButton icon="swap" label="Swap" onPress={() => Alert.alert('Swap unavailable', 'Swap will appear when live routing is enabled.')} />
         </View>
 
         <View style={styles.chartCard}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Wealth curve</Text>
-            <Text style={styles.sectionMeta}>7D</Text>
+          <View style={styles.chartHeader}>
+            <Text style={styles.sectionTitle}>Portfolio Performance</Text>
+            <View style={styles.timeFilters}>
+              {timeFilters.map(filter => (
+                <TouchableOpacity
+                  key={filter}
+                  style={[styles.timeFilter, selectedRange === filter && styles.timeFilterActive]}
+                  onPress={() => setSelectedRange(filter)}
+                >
+                  <Text style={[styles.timeFilterText, selectedRange === filter && styles.timeFilterTextActive]}>{filter}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
-          <PortfolioChart data={chartData} />
+          {loading ? <Skeleton width="100%" height={200} borderRadius={18} /> : <PortfolioChart data={history} />}
         </View>
 
-        <View style={styles.insightCard}>
+        <TouchableOpacity style={styles.insightCard} activeOpacity={0.86} onPress={() => navigation.navigate('InsightsDetail')}>
+          <View style={styles.insightGlow} />
           <View style={styles.insightIcon}>
-            <TextIcon label="AI" size={17} color={COLORS.primaryLight} />
+            <CryptofyIcon name="ai" size={19} color={COLORS.primaryLight} />
           </View>
           <View style={styles.insightCopy}>
-            <Text style={styles.insightTitle}>Your portfolio risk increased by 12% this week.</Text>
-            <Text style={styles.insightText}>Gemini intelligence detected higher ETH concentration after the latest market move.</Text>
+            <Text style={styles.insightLabel}>AI Insight</Text>
+            <Text style={styles.insightTitle}>{insight?.title || insight?.message || 'AI service unavailable'}</Text>
+            {insight?.text ? <Text style={styles.insightText}>{insight.text}</Text> : null}
+            <View style={styles.analysisLink}>
+              <Text style={styles.analysisLinkText}>View Full Analysis</Text>
+              <CryptofyIcon name="chevronRight" size={15} color={COLORS.primaryLight} />
+            </View>
           </View>
-        </View>
-
-        <View style={styles.trustRow}>
-          <View style={styles.trustItem}>
-            <TextIcon label="OK" size={14} color={COLORS.success} />
-            <Text style={styles.trustText}>MPC-ready custody</Text>
-          </View>
-          <View style={styles.trustItem}>
-            <TextIcon label="*" size={18} color={COLORS.primaryLight} />
-            <Text style={styles.trustText}>AI monitoring</Text>
-          </View>
-        </View>
+        </TouchableOpacity>
 
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Allocation</Text>
+          <Text style={styles.sectionTitle}>Assets</Text>
           <TouchableOpacity onPress={() => navigation.navigate('Portfolio')}>
-            <Text style={styles.linkText}>Details</Text>
+            <Text style={styles.linkText}>See all</Text>
           </TouchableOpacity>
         </View>
 
-        <View style={styles.holdings}>
-          {holdings.map((item) => (
-            <View key={item.symbol} style={styles.holdingRow}>
-              <View style={styles.assetMark}>
-                <Text style={styles.assetMarkText}>{item.symbol[0]}</Text>
-              </View>
-              <View style={styles.assetInfo}>
-                <Text style={styles.assetName}>{item.name}</Text>
-                <Text style={styles.assetMeta}>{item.allocation} allocation</Text>
-              </View>
-              <View style={styles.assetValue}>
-                <Text style={styles.assetAmount}>{item.value}</Text>
-                <Text style={styles.assetChange}>{item.change}</Text>
-              </View>
+        <View style={styles.assetList}>
+          {loading ? (
+            <>
+              <Skeleton width="100%" height={78} borderRadius={20} />
+              <Skeleton width="100%" height={78} borderRadius={20} />
+            </>
+          ) : tokens.length > 0 ? (
+            tokens.map(renderToken)
+          ) : (
+            <View style={styles.emptyCard}>
+              <CryptofyIcon name="wallet" size={26} color={COLORS.primaryLight} />
+              <Text style={styles.emptyTitle}>No assets yet</Text>
+              <Text style={styles.emptyText}>Your live balances will appear here once assets are available.</Text>
             </View>
-          ))}
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -124,9 +291,27 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
+  backgroundGlowTop: {
+    position: 'absolute',
+    top: -120,
+    left: -80,
+    width: 260,
+    height: 260,
+    borderRadius: 130,
+    backgroundColor: 'rgba(10,132,255,0.16)',
+  },
+  backgroundGlowMid: {
+    position: 'absolute',
+    top: 260,
+    right: -110,
+    width: 240,
+    height: 240,
+    borderRadius: 120,
+    backgroundColor: 'rgba(165,216,255,0.07)',
+  },
   content: {
     padding: SPACING.l,
-    paddingBottom: SPACING.xxl,
+    paddingBottom: 130,
   },
   header: {
     flexDirection: 'row',
@@ -134,113 +319,226 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: SPACING.l,
   },
+  headerCopy: {
+    flex: 1,
+  },
   greeting: {
     ...TYPOGRAPHY.h2,
-    fontSize: 22,
+    fontSize: 23,
   },
   headerSubtext: {
-    ...TYPOGRAPHY.small,
+    ...TYPOGRAPHY.body,
     color: COLORS.textMuted,
     marginTop: 2,
   },
-  iconButton: {
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  headerIcon: {
     width: 44,
     height: 44,
-    borderRadius: 16,
-    backgroundColor: COLORS.card,
+    borderRadius: 17,
+    backgroundColor: 'rgba(16,24,42,0.82)',
     borderWidth: 1,
     borderColor: COLORS.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  heroCard: {
+  headerIconActive: {
+    borderColor: 'rgba(165,216,255,0.22)',
+    shadowColor: COLORS.primary,
+    shadowOpacity: 0.2,
+    shadowRadius: 14,
+  },
+  unreadDot: {
+    position: 'absolute',
+    top: 11,
+    right: 11,
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: COLORS.primary,
+  },
+  profileButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 17,
+    backgroundColor: 'rgba(10,132,255,0.16)',
+    borderWidth: 1,
+    borderColor: 'rgba(165,216,255,0.22)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  profileInitial: {
+    color: COLORS.primaryLight,
+    fontWeight: '900',
+    fontSize: 16,
+  },
+  balanceCard: {
+    minHeight: 190,
     borderRadius: 28,
     padding: SPACING.l,
     borderWidth: 1,
     borderColor: 'rgba(165,216,255,0.18)',
-    marginBottom: SPACING.m,
-  },
-  heroTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    overflow: 'hidden',
     marginBottom: SPACING.l,
+    shadowColor: COLORS.primary,
+    shadowOpacity: 0.16,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 18 },
+    elevation: 12,
   },
-  heroPill: {
+  cardLighting: {
+    position: 'absolute',
+    width: 190,
+    height: 190,
+    borderRadius: 95,
+    backgroundColor: 'rgba(165,216,255,0.55)',
+    top: -72,
+    right: -68,
+  },
+  balanceTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-  },
-  heroPillText: {
-    color: COLORS.primaryLight,
-    fontSize: 12,
-    fontWeight: '700',
+    justifyContent: 'space-between',
+    marginBottom: SPACING.l,
   },
   balanceLabel: {
     ...TYPOGRAPHY.label,
     color: COLORS.textSecondary,
   },
+  eyeButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.07)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   balance: {
     ...TYPOGRAPHY.balance,
-    fontSize: 44,
-    marginTop: 6,
+    fontSize: 43,
+    letterSpacing: 0,
+  },
+  balanceSkeleton: {
+    marginTop: 2,
+  },
+  emptyHeroText: {
+    color: COLORS.textPrimary,
+    fontSize: 21,
+    fontWeight: '800',
+    lineHeight: 29,
   },
   gainRow: {
     flexDirection: 'row',
+    marginTop: SPACING.m,
+  },
+  trendPill: {
+    flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    marginTop: SPACING.s,
+    gap: 7,
+    paddingHorizontal: 11,
+    paddingVertical: 7,
+    borderRadius: 999,
+    backgroundColor: 'rgba(34,197,94,0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(34,197,94,0.18)',
+  },
+  trendPillNegative: {
+    backgroundColor: 'rgba(239,68,68,0.1)',
+    borderColor: 'rgba(239,68,68,0.18)',
   },
   gainText: {
     color: COLORS.success,
     fontWeight: '800',
+    fontSize: 13,
+  },
+  negativeChange: {
+    color: COLORS.error,
+  },
+  errorCard: {
+    padding: SPACING.m,
+    borderRadius: 18,
+    backgroundColor: 'rgba(239,68,68,0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(239,68,68,0.2)',
+    marginBottom: SPACING.m,
+  },
+  errorTitle: {
+    color: COLORS.textPrimary,
+    fontWeight: '800',
+  },
+  errorText: {
+    color: COLORS.textSecondary,
+    marginTop: 4,
   },
   actionRow: {
     flexDirection: 'row',
-    gap: SPACING.m,
+    justifyContent: 'space-between',
     marginBottom: SPACING.l,
   },
+  actionPressable: {
+    width: '23%',
+  },
   action: {
-    flex: 1,
-    minHeight: 72,
-    borderRadius: 20,
-    backgroundColor: COLORS.card,
+    alignItems: 'center',
+    gap: 8,
+  },
+  actionIcon: {
+    width: 58,
+    height: 58,
+    borderRadius: 22,
+    backgroundColor: 'rgba(16,24,42,0.92)',
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: 'rgba(165,216,255,0.12)',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 7,
   },
   actionText: {
-    color: COLORS.textPrimary,
-    fontWeight: '700',
-    fontSize: 13,
+    color: COLORS.textSecondary,
+    fontWeight: '800',
+    fontSize: 12,
   },
   chartCard: {
-    backgroundColor: COLORS.card,
+    backgroundColor: 'rgba(16,24,42,0.84)',
     borderRadius: 24,
     borderWidth: 1,
     borderColor: COLORS.border,
     padding: SPACING.m,
     marginBottom: SPACING.m,
   },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: SPACING.m,
+  chartHeader: {
+    gap: SPACING.m,
+    marginBottom: SPACING.s,
   },
   sectionTitle: {
     ...TYPOGRAPHY.h3,
     fontSize: 18,
   },
-  sectionMeta: {
+  timeFilters: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderRadius: 14,
+    padding: 4,
+  },
+  timeFilter: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 7,
+    borderRadius: 11,
+  },
+  timeFilterActive: {
+    backgroundColor: 'rgba(10,132,255,0.16)',
+  },
+  timeFilterText: {
     color: COLORS.textMuted,
-    fontWeight: '700',
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  timeFilterTextActive: {
+    color: COLORS.primaryLight,
   },
   insightCard: {
     flexDirection: 'row',
@@ -249,19 +547,37 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     backgroundColor: 'rgba(10,132,255,0.1)',
     borderWidth: 1,
-    borderColor: 'rgba(165,216,255,0.16)',
-    marginBottom: SPACING.m,
+    borderColor: 'rgba(165,216,255,0.18)',
+    marginBottom: SPACING.l,
+    overflow: 'hidden',
+  },
+  insightGlow: {
+    position: 'absolute',
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    right: -50,
+    top: -60,
+    backgroundColor: 'rgba(10,132,255,0.18)',
   },
   insightIcon: {
     width: 44,
     height: 44,
-    borderRadius: 16,
+    borderRadius: 17,
     backgroundColor: 'rgba(10,132,255,0.16)',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(165,216,255,0.15)',
   },
   insightCopy: {
     flex: 1,
+  },
+  insightLabel: {
+    color: COLORS.primaryLight,
+    fontSize: 12,
+    fontWeight: '900',
+    marginBottom: 5,
   },
   insightTitle: {
     color: COLORS.textPrimary,
@@ -271,60 +587,63 @@ const styles = StyleSheet.create({
   },
   insightText: {
     color: COLORS.textSecondary,
-    marginTop: 4,
+    marginTop: 5,
     fontSize: 13,
     lineHeight: 19,
   },
-  trustRow: {
-    flexDirection: 'row',
-    gap: SPACING.m,
-    marginBottom: SPACING.l,
-  },
-  trustItem: {
-    flex: 1,
+  analysisLink: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    padding: SPACING.m,
-    borderRadius: 18,
-    backgroundColor: COLORS.card,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    gap: 4,
+    marginTop: 10,
   },
-  trustText: {
-    flex: 1,
-    color: COLORS.textSecondary,
-    fontSize: 12,
-    fontWeight: '700',
+  analysisLinkText: {
+    color: COLORS.primaryLight,
+    fontWeight: '800',
+    fontSize: 13,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: SPACING.m,
   },
   linkText: {
     color: COLORS.primaryLight,
-    fontWeight: '700',
+    fontWeight: '800',
+    fontSize: 13,
   },
-  holdings: {
+  assetList: {
     gap: SPACING.s,
   },
-  holdingRow: {
+  assetRow: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: SPACING.m,
-    borderRadius: 18,
-    backgroundColor: COLORS.card,
+    borderRadius: 20,
+    backgroundColor: 'rgba(16,24,42,0.86)',
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: 'rgba(255,255,255,0.06)',
   },
-  assetMark: {
-    width: 42,
-    height: 42,
-    borderRadius: 15,
+  assetRowPressed: {
+    transform: [{ scale: 0.99 }],
+    borderColor: 'rgba(165,216,255,0.18)',
+  },
+  tokenIcon: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
     backgroundColor: 'rgba(10,132,255,0.14)',
+    borderWidth: 1,
+    borderColor: 'rgba(165,216,255,0.14)',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: SPACING.m,
   },
-  assetMarkText: {
+  tokenIconText: {
     color: COLORS.primaryLight,
     fontWeight: '900',
+    fontSize: 16,
   },
   assetInfo: {
     flex: 1,
@@ -332,11 +651,12 @@ const styles = StyleSheet.create({
   assetName: {
     color: COLORS.textPrimary,
     fontWeight: '800',
+    fontSize: 15,
   },
   assetMeta: {
     color: COLORS.textMuted,
     fontSize: 12,
-    marginTop: 2,
+    marginTop: 3,
   },
   assetValue: {
     alignItems: 'flex-end',
@@ -344,11 +664,37 @@ const styles = StyleSheet.create({
   assetAmount: {
     color: COLORS.textPrimary,
     fontWeight: '800',
+    fontSize: 14,
+  },
+  assetMuted: {
+    color: COLORS.textMuted,
+    fontSize: 12,
+    fontWeight: '700',
   },
   assetChange: {
     color: COLORS.success,
     fontSize: 12,
-    marginTop: 2,
-    fontWeight: '700',
+    marginTop: 3,
+    fontWeight: '800',
+  },
+  emptyCard: {
+    padding: SPACING.l,
+    borderRadius: 22,
+    backgroundColor: 'rgba(16,24,42,0.86)',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    alignItems: 'center',
+  },
+  emptyTitle: {
+    color: COLORS.textPrimary,
+    fontWeight: '900',
+    fontSize: 16,
+    marginTop: 10,
+  },
+  emptyText: {
+    color: COLORS.textSecondary,
+    marginTop: 6,
+    textAlign: 'center',
+    lineHeight: 19,
   },
 });

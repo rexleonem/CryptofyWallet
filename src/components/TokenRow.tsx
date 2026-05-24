@@ -7,17 +7,22 @@ interface TokenRowProps {
   symbol: string;
   name: string;
   amount: string;
-  value: string;
-  change24h: number;
+  value: string | null;
+  change24h: number | null;
   onPress: () => void;
 }
 
-export default function TokenRow({ symbol = '?', name = 'Unknown', amount = '0', value = '0', change24h = 0, onPress }: TokenRowProps) {
-  const displaySymbol = symbol || '?';
+export default function TokenRow({ symbol, name, amount, value, change24h, onPress }: TokenRowProps) {
+  const displaySymbol = symbol || '';
+  const parsedValue = value ? Number(value) : null;
+  const displayValue = parsedValue !== null && Number.isFinite(parsedValue)
+    ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(parsedValue)
+    : 'Value unavailable';
+
   return (
     <TouchableOpacity style={styles.container} onPress={onPress}>
       <View style={styles.iconContainer}>
-        <Text style={styles.iconText}>{displaySymbol[0] || '?'}</Text>
+        <Text style={styles.iconText}>{displaySymbol[0] || '-'}</Text>
       </View>
       
       <View style={styles.mainInfo}>
@@ -26,8 +31,8 @@ export default function TokenRow({ symbol = '?', name = 'Unknown', amount = '0',
       </View>
 
       <View style={styles.valueInfo}>
-        <Text style={styles.value}>${parseFloat(value || '0').toLocaleString()}</Text>
-        <ProfitBadge percentage={change24h} />
+        <Text style={styles.value}>{displayValue}</Text>
+        {typeof change24h === 'number' ? <ProfitBadge percentage={change24h} /> : null}
       </View>
     </TouchableOpacity>
   );

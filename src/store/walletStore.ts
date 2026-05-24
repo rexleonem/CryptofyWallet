@@ -5,35 +5,35 @@ interface AccountState {
   name: string;
   email: string | null;
   address: string | null;
-  depositAddress: string;
+  depositAddress: string | null;
   isAuthenticated: boolean;
   isUnlocked: boolean;
   biometricEnabled: boolean;
-  signIn: (email: string, name?: string) => void;
+  signIn: (email?: string | null, name?: string) => void;
   signOut: () => void;
-  setDepositAddress: (address: string) => void;
-  setAddress: (address: string) => void;
+  setDepositAddress: (address: string | null) => void;
+  setAddress: (address: string | null) => void;
   setUnlocked: (isUnlocked: boolean) => void;
 }
 
-const DEMO_DEPOSIT_ADDRESS = '0x7F9A2dE81C3f4B6A9018bDd77e4936F21bC04291';
+const DEFAULT_ACCOUNT_NAME = 'there';
 
 export const useAccountStore = create<AccountState>((set) => ({
   userId: null,
-  name: 'Rex',
+  name: DEFAULT_ACCOUNT_NAME,
   email: null,
-  address: DEMO_DEPOSIT_ADDRESS,
-  depositAddress: DEMO_DEPOSIT_ADDRESS,
+  address: null,
+  depositAddress: null,
   isAuthenticated: false,
   isUnlocked: false,
   biometricEnabled: true,
-  signIn: (email, name = 'Rex') =>
+  signIn: (email, name = DEFAULT_ACCOUNT_NAME) =>
     set({
-      userId: 'acct_cfy_demo',
-      name,
-      email,
-      address: DEMO_DEPOSIT_ADDRESS,
-      depositAddress: DEMO_DEPOSIT_ADDRESS,
+      userId: `acct_${Date.now()}`,
+      name: name.trim() || DEFAULT_ACCOUNT_NAME,
+      email: email || null,
+      address: null,
+      depositAddress: null,
       isAuthenticated: true,
       isUnlocked: true,
     }),
@@ -41,6 +41,9 @@ export const useAccountStore = create<AccountState>((set) => ({
     set({
       userId: null,
       email: null,
+      name: DEFAULT_ACCOUNT_NAME,
+      address: null,
+      depositAddress: null,
       isAuthenticated: false,
       isUnlocked: false,
     }),

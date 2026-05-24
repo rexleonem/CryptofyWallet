@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { Text, View, StyleSheet } from 'react-native';
 import Svg, {
   Defs,
   LinearGradient,
@@ -39,8 +39,16 @@ function buildLinePath(data: number[]) {
 }
 
 export default function PortfolioChart({ data }: PortfolioChartProps) {
-  const safeData = data.length > 0 ? data : [0];
-  const linePath = buildLinePath(safeData);
+  if (data.length === 0) {
+    return (
+      <View style={[styles.container, styles.emptyContainer]}>
+        <Text style={styles.emptyTitle}>No chart data yet</Text>
+        <Text style={styles.emptyText}>Portfolio history will appear once live snapshots are available.</Text>
+      </View>
+    );
+  }
+
+  const linePath = buildLinePath(data);
 
   return (
     <View style={styles.container}>
@@ -86,5 +94,23 @@ const styles = StyleSheet.create({
   container: {
     marginVertical: 20,
     backgroundColor: 'transparent',
+  },
+  emptyContainer: {
+    height: CHART_HEIGHT,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+  },
+  emptyTitle: {
+    color: COLORS.textPrimary,
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 6,
+  },
+  emptyText: {
+    color: COLORS.textSecondary,
+    fontSize: 13,
+    textAlign: 'center',
+    lineHeight: 18,
   },
 });

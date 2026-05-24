@@ -7,13 +7,23 @@ interface GasEstimateCardProps {
     slow: string;
     standard: string;
     fast: string;
-  };
+  } | null;
   selected: 'slow' | 'standard' | 'fast';
   onSelect: (speed: 'slow' | 'standard' | 'fast') => void;
+  loading?: boolean;
 }
 
-export default function GasEstimateCard({ estimates, selected, onSelect }: GasEstimateCardProps) {
+export default function GasEstimateCard({ estimates, selected, onSelect, loading }: GasEstimateCardProps) {
   const speeds: Array<'slow' | 'standard' | 'fast'> = ['slow', 'standard', 'fast'];
+
+  if (loading || !estimates) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.title}>Estimated Gas Fee</Text>
+        <Text style={styles.unavailableText}>{loading ? 'Fetching live network fees...' : 'Network fee unavailable'}</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -30,7 +40,7 @@ export default function GasEstimateCard({ estimates, selected, onSelect }: GasEs
           >
             <View style={[styles.dot, { backgroundColor: getSpeedColor(speed) }]} />
             <Text style={styles.speedLabel}>{speed.charAt(0).toUpperCase() + speed.slice(1)}</Text>
-            <Text style={styles.feeText}>{estimates[speed].split(' ')[0]}</Text>
+            <Text style={styles.feeText}>{estimates[speed]}</Text>
           </TouchableOpacity>
         ))}
       </View>
@@ -92,5 +102,9 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: 'bold',
     color: COLORS.textPrimary,
+  },
+  unavailableText: {
+    ...TYPOGRAPHY.small,
+    color: COLORS.textMuted,
   },
 });

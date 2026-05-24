@@ -16,7 +16,12 @@ export default function InsightsDetailScreen() {
   const [aiData, setAiData] = useState<any>(null);
 
   const fetchAiInsights = async () => {
-    if (!address) return;
+    if (!address) {
+      setAiData(null);
+      setLoading(false);
+      setRefreshing(false);
+      return;
+    }
     try {
       const response = await apiClient.get(`/ai/portfolio/${address}`);
       setAiData(response.data);
@@ -63,10 +68,12 @@ export default function InsightsDetailScreen() {
           <Text style={styles.summaryLabel}>Overall Assessment</Text>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryTitle}>Portfolio Analysis</Text>
-            <RiskBadge level={aiData?.riskLevel || 'medium'} />
+            {aiData?.riskLevel ? <RiskBadge level={aiData.riskLevel} /> : null}
           </View>
           <Text style={styles.summaryText}>
-            Our AI has analyzed your holdings. You have a {aiData?.riskLevel} risk profile with a risk score of {aiData?.riskScore}/100.
+            {aiData?.riskLevel && typeof aiData?.riskScore === 'number'
+              ? `Live analysis returned a ${aiData.riskLevel} risk profile with a risk score of ${aiData.riskScore}/100.`
+              : 'AI service unavailable'}
           </Text>
         </View>
 

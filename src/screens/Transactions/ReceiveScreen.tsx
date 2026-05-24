@@ -10,6 +10,10 @@ export default function ReceiveScreen() {
   const { depositAddress } = useAccountStore();
 
   const copyAddress = () => {
+    if (!depositAddress) {
+      return;
+    }
+
     Clipboard.setString(depositAddress);
     Alert.alert('Copied', 'Deposit address copied to clipboard');
   };
@@ -25,32 +29,41 @@ export default function ReceiveScreen() {
       </View>
 
       <View style={styles.content}>
-        <View style={styles.depositCode}>
-          {Array.from({ length: 49 }).map((_, index) => (
-            <View
-              key={index}
-              style={[
-                styles.depositCodeCell,
-                (index + depositAddress.charCodeAt(index % depositAddress.length)) % 3 !== 0 && styles.depositCodeCellActive,
-              ]}
-            />
-          ))}
-        </View>
+        {depositAddress ? (
+          <>
+            <View style={styles.depositCode}>
+              {Array.from({ length: 49 }).map((_, index) => (
+                <View
+                  key={index}
+                  style={[
+                    styles.depositCodeCell,
+                    (index + depositAddress.charCodeAt(index % depositAddress.length)) % 3 !== 0 && styles.depositCodeCellActive,
+                  ]}
+                />
+              ))}
+            </View>
 
-        <Text style={styles.instruction}>Scan to deposit to your Cryptofy custody account</Text>
+            <Text style={styles.instruction}>Scan to add funds to your Cryptofy account</Text>
 
-        <View style={styles.addressCard}>
-          <Text style={styles.addressLabel}>Ethereum deposit address</Text>
-          <Text style={styles.addressValue}>{depositAddress}</Text>
+            <View style={styles.addressCard}>
+              <Text style={styles.addressLabel}>Deposit address</Text>
+              <Text style={styles.addressValue}>{depositAddress}</Text>
           
-          <TouchableOpacity style={styles.copyButton} onPress={copyAddress}>
-            <Text style={styles.copyText}>Copy deposit address</Text>
-          </TouchableOpacity>
-        </View>
+              <TouchableOpacity style={styles.copyButton} onPress={copyAddress}>
+                <Text style={styles.copyText}>Copy deposit address</Text>
+              </TouchableOpacity>
+            </View>
 
-        <TouchableOpacity style={styles.shareButton} onPress={() => Alert.alert('Share', 'Share functionality coming soon')}>
-          <Text style={styles.shareText}>Share Address</Text>
-        </TouchableOpacity>
+            <TouchableOpacity style={styles.shareButton} onPress={() => Alert.alert('Share', 'Sharing is unavailable until an address is active.')}>
+              <Text style={styles.shareText}>Share Address</Text>
+            </TouchableOpacity>
+          </>
+        ) : (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyTitle}>Deposit address unavailable</Text>
+            <Text style={styles.emptyText}>Your deposit details will appear here once account setup is complete.</Text>
+          </View>
+        )}
       </View>
     </SafeAreaView>
   );
@@ -142,5 +155,24 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     fontSize: 16,
     fontWeight: '600',
+  },
+  emptyState: {
+    width: '100%',
+    backgroundColor: COLORS.card,
+    borderRadius: 22,
+    padding: SPACING.xl,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    alignItems: 'center',
+  },
+  emptyTitle: {
+    ...TYPOGRAPHY.h3,
+    marginBottom: 8,
+  },
+  emptyText: {
+    ...TYPOGRAPHY.body,
+    textAlign: 'center',
+    color: COLORS.textMuted,
+    lineHeight: 22,
   },
 });

@@ -6,12 +6,12 @@ interface TransactionCardProps {
   type: 'send' | 'receive';
   address: string;
   amount: string;
-  symbol?: string;
+  symbol?: string | null;
   status: 'pending' | 'confirmed' | 'failed';
   timestamp: string;
 }
 
-export default function TransactionCard({ type, address, amount, symbol = 'ETH', status, timestamp }: TransactionCardProps) {
+export default function TransactionCard({ type, address, amount, symbol, status, timestamp }: TransactionCardProps) {
   const isSend = type === 'send';
   
   const statusColor = {
@@ -35,7 +35,7 @@ export default function TransactionCard({ type, address, amount, symbol = 'ETH',
 
       <View style={styles.amountContainer}>
         <Text style={[styles.amountText, { color: isSend ? COLORS.textPrimary : COLORS.success }]}>
-          {isSend ? '-' : '+'}{amount} {symbol}
+          {isSend ? '-' : '+'}{amount}{symbol ? ` ${symbol}` : ''}
         </Text>
         <View style={[styles.statusBadge, { backgroundColor: statusColor + '20' }]}>
           <Text style={[styles.statusText, { color: statusColor }]}>

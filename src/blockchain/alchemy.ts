@@ -1,6 +1,10 @@
 import { ALCHEMY_URL } from '../constants/chains';
 
 async function callRpc<T>(method: string, params: unknown[]): Promise<T> {
+  if (!ALCHEMY_URL) {
+    throw new Error('Live blockchain provider unavailable');
+  }
+
   const response = await fetch(ALCHEMY_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

@@ -1,21 +1,58 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, TextInput, ScrollView, Alert } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { COLORS, SPACING, TYPOGRAPHY } from '../../constants/Theme';
 import GasEstimateCard from '../../components/GasEstimateCard';
 import { isEthereumAddress } from '../../utils/address';
+import { apiClient } from '../../api/client';
 
 export default function SendScreen() {
   const navigation = useNavigation<any>();
+  const route = useRoute<any>();
+  const assetSymbol = route.params?.asset?.symbol || route.params?.symbol || null;
   const [recipient, setRecipient] = useState('');
   const [amount, setAmount] = useState('');
   const [speed, setSpeed] = useState<'slow' | 'standard' | 'fast'>('standard');
-  const [estimates, setEstimates] = useState({ slow: '0.0012', standard: '0.0021', fast: '0.0035' });
+  const [estimates, setEstimates] = useState<{ slow: string; standard: string; fast: string } | null>(null);
+  const [feeLoading, setFeeLoading] = useState(false);
   const [isValidAddress, setIsValidAddress] = useState(false);
 
   useEffect(() => {
     setIsValidAddress(isEthereumAddress(recipient));
   }, [recipient]);
+
+  useEffect(() => {
+    const amountValue = Number(amount);
+
+    if (!isEthereumAddress(recipient) || !Number.isFinite(amountValue) || amountValue <= 0) {
+      setEstimates(null);
+      return;
+    }
+
+    let cancelled = false;
+    setFeeLoading(true);
+
+    apiClient.post('/transaction/gas-estimate', { to: recipient, amount })
+      .then(response => {
+        if (!cancelled) {
+          setEstimates(response.data);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setEstimates(null);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setFeeLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [recipient, amount]);
 
   const handleReview = () => {
     if (!isValidAddress) {
@@ -26,12 +63,21 @@ export default function SendScreen() {
       Alert.alert('Invalid Amount', 'Please enter an amount greater than 0.');
       return;
     }
+    if (!estimates) {
+      Alert.alert('Network Fee Unavailable', 'Unable to fetch live network fees right now.');
+      return;
+    }
+    if (!assetSymbol) {
+      Alert.alert('Asset Unavailable', 'Select an asset before requesting a withdrawal.');
+      return;
+    }
 
     navigation.navigate('ConfirmTransaction', {
       recipient,
       amount,
       gasFee: estimates[speed],
-      speed
+      speed,
+      assetSymbol,
     });
   };
 
@@ -82,31 +128,34 @@ export default function SendScreen() {
           estimates={estimates} 
           selected={speed} 
           onSelect={setSpeed} 
+          loading={feeLoading}
         />
 
         <View style={styles.summaryCard}>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Withdrawal request</Text>
-            <Text style={styles.summaryValue}>{amount || '0'} ETH</Text>
+            <Text style={styles.summaryValue}>{amount && assetSymbol ? `${amount} ${assetSymbol}` : 'Select an asset and amount'}</Text>
           </View>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Estimated network fee</Text>
-            <Text style={styles.summaryValue}>{estimates[speed]} ETH</Text>
+            <Text style={styles.summaryValue}>{estimates ? `${estimates[speed]} network asset` : 'Unavailable'}</Text>
           </View>
-          <View style={[styles.summaryRow, styles.totalRow]}>
-            <Text style={styles.totalLabel}>Total</Text>
-            <Text style={styles.totalValue}>
-              {(parseFloat(amount || '0') + parseFloat(estimates[speed])).toFixed(6)} ETH
-            </Text>
-          </View>
+          {estimates && amount ? (
+            <View style={[styles.summaryRow, styles.totalRow]}>
+              <Text style={styles.totalLabel}>Total</Text>
+              <Text style={styles.totalValue}>
+                {(parseFloat(amount) + parseFloat(estimates[speed])).toFixed(6)} {assetSymbol}
+              </Text>
+            </View>
+          ) : null}
         </View>
       </ScrollView>
 
       <View style={styles.footer}>
         <TouchableOpacity 
-          style={[styles.button, (!isValidAddress || !amount) && styles.disabledButton]}
+          style={[styles.button, (!isValidAddress || !amount || !estimates || !assetSymbol) && styles.disabledButton]}
           onPress={handleReview}
-          disabled={!isValidAddress || !amount}
+          disabled={!isValidAddress || !amount || !estimates || !assetSymbol}
         >
           <Text style={styles.buttonText}>Review withdrawal</Text>
         </TouchableOpacity>

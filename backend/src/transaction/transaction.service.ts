@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ServiceUnavailableException } from '@nestjs/common';
 import { BlockchainService } from '../blockchain/blockchain.service';
 import { ethers } from 'ethers';
 
@@ -18,16 +18,12 @@ export class TransactionService {
       const standardFee = standardGasLimit * gasPrice;
 
       return {
-        slow: ethers.formatEther(standardFee * 8n / 10n) + ' ETH',
-        standard: ethers.formatEther(standardFee) + ' ETH',
-        fast: ethers.formatEther(standardFee * 12n / 10n) + ' ETH',
+        slow: ethers.formatEther(standardFee * 8n / 10n),
+        standard: ethers.formatEther(standardFee),
+        fast: ethers.formatEther(standardFee * 12n / 10n),
       };
     } catch (error) {
-      return {
-        slow: '0.001 ETH',
-        standard: '0.002 ETH',
-        fast: '0.003 ETH',
-      };
+      throw new ServiceUnavailableException('Live network fee unavailable');
     }
   }
 
@@ -69,25 +65,6 @@ export class TransactionService {
   }
 
   async getHistory(address: string) {
-    // In a real app, we'd use Etherscan or an indexer.
-    // For this stage, we'll return a mock history that fits the UI design.
-    return [
-      {
-        id: '1',
-        type: 'send',
-        to: '0xA3f...91D2',
-        amount: '0.05',
-        status: 'pending',
-        timestamp: new Date().toISOString(),
-      },
-      {
-        id: '2',
-        type: 'receive',
-        from: '0xB8...21A9',
-        amount: '0.12',
-        status: 'confirmed',
-        timestamp: new Date(Date.now() - 3600000).toISOString(),
-      }
-    ];
+    return [];
   }
 }

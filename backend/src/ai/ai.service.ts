@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PortfolioService } from '../portfolio/portfolio.service';
 import axios from 'axios';
-import { DEFAULT_USER_PLAN } from '../common/constants';
 
 @Injectable()
 export class AiService {
@@ -14,12 +13,11 @@ export class AiService {
   async getPortfolioInsights(address: string) {
     const portfolio = await this.portfolioService.getSummary(address);
     
-    // Format data for Python AI service
     const aiInput = {
-      totalValue: parseFloat(portfolio.totalValue),
+      totalValue: portfolio.totalValue,
       tokens: portfolio.tokens.map(t => ({
         symbol: t.symbol,
-        value: parseFloat(t.value)
+        value: t.value
       }))
     };
 
@@ -33,7 +31,7 @@ export class AiService {
       return response.data;
     } catch (error) {
       console.error('AI Insights Error:', error.message);
-      return { riskScore: 50, riskLevel: 'medium', insights: [] };
+      return { message: 'AI service unavailable', insights: [] };
     }
   }
 
@@ -41,17 +39,16 @@ export class AiService {
     const portfolio = await this.portfolioService.getSummary(address);
     const insights = await this.getPortfolioInsights(address);
 
-    // User plan lookup (all plans now have access to core AI functionality)
     const context = {
-      totalValue: parseFloat(portfolio.totalValue),
+      totalValue: portfolio.totalValue,
       change24h: portfolio.change24h,
-      riskLevel: insights.riskLevel,
-      riskScore: insights.riskScore,
-      topAsset: portfolio.tokens[0]?.symbol || 'None',
+      riskLevel: insights.riskLevel ?? null,
+      riskScore: insights.riskScore ?? null,
+      topAsset: portfolio.tokens[0]?.symbol ?? null,
       tokens: portfolio.tokens.map(t => ({
         symbol: t.symbol,
         amount: t.amount,
-        value: parseFloat(t.value)
+        value: t.value
       }))
     };
 
@@ -69,7 +66,7 @@ export class AiService {
     } catch (error) {
       console.error('AI Chat Error:', error.message);
       return {
-        response: "I'm having trouble connecting to my brain right now. Please try again in a moment.",
+        response: 'AI service unavailable',
         insights: [],
         actions: []
       };

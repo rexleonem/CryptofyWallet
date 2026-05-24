@@ -4,15 +4,15 @@ export interface TokenAsset {
   symbol: string;
   name: string;
   amount: string;
-  value: string;
-  change24h: number;
-  price: string;
+  value: string | null;
+  change24h: number | null;
+  price: string | null;
   chain: string;
 }
 
 export interface PortfolioSummary {
-  totalValue: string;
-  change24h: number;
+  totalValue: string | null;
+  change24h: number | null;
   tokens: TokenAsset[];
 }
 
@@ -27,11 +27,6 @@ export const fetchPortfolioSummary = async (address: string): Promise<PortfolioS
 };
 
 export const fetchPortfolioHistory = async (address: string): Promise<number[]> => {
-  try {
-    const response = await apiClient.get(`/portfolio/history/${address}`);
-    return response.data;
-  } catch (error) {
-    console.error('Fetch History Error:', error);
-    return [0, 0, 0, 0, 0, 0, 0];
-  }
+  const response = await apiClient.get(`/portfolio/history/${address}`);
+  return Array.isArray(response.data) ? response.data : [];
 };

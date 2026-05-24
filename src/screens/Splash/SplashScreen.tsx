@@ -35,7 +35,7 @@ export default function SplashScreen() {
         <LogoAnimation />
       </View>
       <Animated.View style={[styles.taglineWrap, taglineStyle]}>
-        <Text style={styles.tagline}>AI-Powered Financial Intelligence</Text>
+        <Text style={styles.tagline}>AI-Powered Crypto Intelligence</Text>
       </Animated.View>
     </View>
   );

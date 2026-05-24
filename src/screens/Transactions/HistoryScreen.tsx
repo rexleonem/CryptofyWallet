@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, FlatList, TouchableOpacity, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, FlatList, TouchableOpacity, RefreshControl, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import TransactionCard from '../../components/TransactionCard';
 import { COLORS, SPACING, TYPOGRAPHY } from '../../constants/Theme';
@@ -10,22 +10,32 @@ export default function HistoryScreen() {
   const navigation = useNavigation();
   const { address } = useWalletStore();
   const [history, setHistory] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const fetchHistory = async () => {
+    if (!address) {
+      setHistory([]);
+      setLoading(false);
+      setRefreshing(false);
+      return;
+    }
+
     try {
       const response = await apiClient.get(`/transaction/history/${address}`);
-      setHistory(response.data as any[]);
+      setHistory(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('History Fetch Error:', error);
+      setHistory([]);
     } finally {
+      setLoading(false);
       setRefreshing(false);
     }
   };
 
   useEffect(() => {
     fetchHistory();
-  }, []);
+  }, [address]);
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -42,14 +52,20 @@ export default function HistoryScreen() {
         <View style={{ width: 50 }} />
       </View>
 
-      <FlatList
-        data={history}
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+        </View>
+      ) : (
+        <FlatList
+          data={history}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <TransactionCard 
             type={item.type}
             address={item.to || item.from}
             amount={item.amount}
+            symbol={item.symbol}
             status={item.status}
             timestamp={item.timestamp}
           />
@@ -63,7 +79,8 @@ export default function HistoryScreen() {
             <Text style={styles.emptyText}>No transactions found</Text>
           </View>
         }
-      />
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -92,6 +109,11 @@ const styles = StyleSheet.create({
   },
   emptyContainer: {
     marginTop: 100,
+    alignItems: 'center',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
   },
   emptyText: {

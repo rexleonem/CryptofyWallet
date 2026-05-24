@@ -2,13 +2,12 @@ import os
 import httpx
 
 CMC_BASE_URL = 'https://pro-api.coinmarketcap.com/v1'
-CMC_API_KEY = os.environ.get('CMC_API_KEY', '08eeeeac-0281-4611-b43f-9b1c39b809f7')
+CMC_API_KEY = os.environ.get('CMC_API_KEY')
 
 async def get_prices(symbols: list[str]) -> dict:
-    """
-    Fetch prices for a list of symbols from CoinMarketCap.
-    Symbols should be like ['BTC', 'ETH']
-    """
+    if not CMC_API_KEY:
+        return {}
+
     url = f"{CMC_BASE_URL}/cryptocurrency/quotes/latest"
     parameters = {
         'symbol': ','.join(symbols),
@@ -23,8 +22,6 @@ async def get_prices(symbols: list[str]) -> dict:
         response = await client.get(url, headers=headers, params=parameters)
         data = response.json()
         
-        # Transform CMC response into a simpler format for the app
-        # Format: { 'BTC': { 'price': 50000, 'percent_change_24h': 2.5 } }
         prices = {}
         if 'data' in data:
             for symbol in symbols:

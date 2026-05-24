@@ -2,51 +2,46 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ethers } from 'ethers';
 import { PrismaService } from '../prisma/prisma.service';
-import { MOCK_PRICES } from '../common/constants';
 
 @Injectable()
 export class WalletsService {
-  private provider: ethers.JsonRpcProvider;
+  private provider: ethers.JsonRpcProvider | null;
 
   constructor(
     private prisma: PrismaService,
     private configService: ConfigService
   ) {
-    const apiKey = this.configService.get<string>('ALCHEMY_API_KEY') || '3xqHZz7DfKWBhtl4NHhQM';
-    const rpcUrl = `https://eth-mainnet.g.alchemy.com/v2/${apiKey}`;
-    this.provider = new ethers.JsonRpcProvider(rpcUrl);
+    const apiKey = this.configService.get<string>('ALCHEMY_API_KEY');
+    this.provider = apiKey
+      ? new ethers.JsonRpcProvider(`https://eth-mainnet.g.alchemy.com/v2/${apiKey}`)
+      : null;
   }
 
   async getBalance(address: string) {
     if (!ethers.isAddress(address)) {
       throw new BadRequestException('Invalid Ethereum address');
     }
+    if (!this.provider) {
+      throw new BadRequestException('Live wallet balance provider unavailable');
+    }
 
     try {
       const balanceWei = await this.provider.getBalance(address);
       const balanceEth = ethers.formatEther(balanceWei);
       
-      const ethPrice = MOCK_PRICES['ETH'] || 2500; 
-      const balanceUsd = parseFloat(balanceEth) * ethPrice;
-
       return {
         balance: parseFloat(balanceEth).toFixed(4),
-        usd: balanceUsd,
+        usd: null,
       };
     } catch (error) {
       console.error('Error fetching balance:', error);
-      return {
-        balance: '0.0000',
-        usd: 0,
-      };
+      throw error;
     }
   }
 
-  async createWallet(userId: string, label = 'Cryptofy Custody Account', network = 'ethereum') {
+  async createWallet(userId: string, label = 'Cryptofy Account', network = 'ethereum') {
     const wallet = ethers.Wallet.createRandom();
 
-    // Custodial production signing must live behind Fireblocks, HSM, or MPC.
-    // This service only stores the public deposit address in the app database.
     return this.prisma.wallet.create({
       data: {
         userId,
@@ -57,12 +52,11 @@ export class WalletsService {
     });
   }
 
-  async getCustodyProfile(userId: string) {
+  async getAccountProfile(userId: string) {
     const wallets = await this.findByUserId(userId);
 
     return {
       userId,
-      custodyProvider: 'MPC_READY_INTERNAL_SERVICE',
       policy: {
         privateKeysExposedToMobile: false,
         withdrawalReview: true,

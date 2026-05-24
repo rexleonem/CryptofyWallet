@@ -6,7 +6,8 @@ import { APP_VERSION, APP_BUILD } from '../../constants/Config';
 import TextIcon from '../../components/TextIcon';
 
 export default function SettingsScreen() {
-  const { depositAddress, email, name, signOut } = useAccountStore();
+  const { depositAddress, email, name, biometricEnabled, signOut } = useAccountStore();
+  const profileInitial = (name?.trim()?.[0] || email?.trim()?.[0] || 'U').toUpperCase();
 
   const logout = () => {
     signOut();
@@ -36,25 +37,27 @@ export default function SettingsScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.profileSection}>
           <View style={styles.avatar}>
-            <TextIcon label="R" size={28} color={COLORS.primary} />
+            <Text style={styles.avatarText}>{profileInitial}</Text>
           </View>
           <Text style={styles.addressText} numberOfLines={1} ellipsizeMode="middle">
             {name} {email ? `- ${email}` : ''}
           </Text>
-          <Text style={styles.custodyText} numberOfLines={1} ellipsizeMode="middle">{depositAddress}</Text>
+          <Text style={styles.accountText} numberOfLines={1} ellipsizeMode="middle">
+            {depositAddress || 'Deposit address unavailable'}
+          </Text>
         </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Account</Text>
           <SettingItem icon="S" title="Security & Privacy" onPress={() => {}} />
-          <SettingItem icon="D" title="Device sessions" value="1 active" onPress={() => {}} />
-          <SettingItem icon="!" title="Notifications" value="On" onPress={() => {}} />
-          <SettingItem icon="L" title="Biometric unlock" value="Enabled" onPress={() => {}} />
+          <SettingItem icon="D" title="Device sessions" onPress={() => {}} />
+          <SettingItem icon="!" title="Notifications" onPress={() => {}} />
+          <SettingItem icon="L" title="Biometric unlock" value={biometricEnabled ? 'Enabled' : 'Off'} onPress={() => {}} />
         </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Support</Text>
-          <SettingItem icon="C" title="Custody & withdrawals" value="Protected" onPress={() => {}} />
+          <SettingItem icon="C" title="Withdrawals" onPress={() => {}} />
           <SettingItem icon="?" title="Help Center" onPress={() => {}} />
           <SettingItem icon="*" title="About Cryptofy" onPress={() => {}} />
         </View>
@@ -105,13 +108,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: SPACING.m,
   },
+  avatarText: {
+    color: COLORS.primary,
+    fontSize: 28,
+    fontWeight: '800',
+  },
   addressText: {
     ...TYPOGRAPHY.small,
     color: COLORS.textMuted,
     width: '90%',
     textAlign: 'center',
   },
-  custodyText: {
+  accountText: {
     ...TYPOGRAPHY.small,
     width: '90%',
     textAlign: 'center',

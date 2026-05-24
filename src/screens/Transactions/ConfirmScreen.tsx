@@ -9,7 +9,7 @@ import { useAccountStore } from '../../store/walletStore';
 export default function ConfirmScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
-  const { recipient, amount, gasFee, speed } = route.params;
+  const { recipient, amount, gasFee, speed, assetSymbol } = route.params;
   const { depositAddress } = useAccountStore();
   const [countdown, setCountdown] = useState(3);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -42,7 +42,7 @@ export default function ConfirmScreen() {
       setIsSubmitting(false);
       Alert.alert(
         'Withdrawal submitted',
-        'Cryptofy is reviewing and signing this transfer through the custodial wallet service.',
+        'Cryptofy is reviewing this transfer with your security settings before submission.',
         [{ text: 'Done', onPress: () => navigation.navigate('Main') }],
       );
     }, 900);
@@ -59,13 +59,13 @@ export default function ConfirmScreen() {
 
       <View style={styles.securityBox}>
         <TextIcon label="OK" size={14} color={COLORS.success} />
-        <Text style={styles.securityText}>No private key is used on this device. The backend will perform policy checks, risk review, and secure signing.</Text>
+        <Text style={styles.securityText}>Protected by risk checks, device verification, and withdrawal review.</Text>
       </View>
 
       <View style={styles.summaryCard}>
         <View style={styles.infoRow}>
           <Text style={styles.label}>From account</Text>
-          <Text style={styles.value} numberOfLines={1} ellipsizeMode="middle">{depositAddress}</Text>
+          <Text style={styles.value} numberOfLines={1} ellipsizeMode="middle">{depositAddress || 'Unavailable'}</Text>
         </View>
         <View style={styles.infoRow}>
           <Text style={styles.label}>Recipient</Text>
@@ -74,7 +74,7 @@ export default function ConfirmScreen() {
         <View style={styles.divider} />
         <View style={styles.amountRow}>
           <Text style={styles.amountLabel}>Amount</Text>
-          <Text style={styles.amountValue}>{amount} ETH</Text>
+          <Text style={styles.amountValue}>{amount} {assetSymbol || ''}</Text>
         </View>
         <View style={styles.amountRow}>
           <Text style={styles.amountLabel}>Network speed</Text>
@@ -82,7 +82,7 @@ export default function ConfirmScreen() {
         </View>
         <View style={styles.amountRow}>
           <Text style={styles.amountLabel}>Estimated fee</Text>
-          <Text style={styles.amountValue}>{gasFee} ETH</Text>
+          <Text style={styles.amountValue}>{gasFee}</Text>
         </View>
       </View>
 

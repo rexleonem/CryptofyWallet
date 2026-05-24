@@ -45,12 +45,12 @@ const P2PMarketplace = () => {
   };
 
   const renderOffer = ({ item }: { item: P2POffer }) => {
-    const userName = item?.user?.name || 'Anonymous';
-    const rating = item?.user?.rating || 0;
-    const trades = item?.user?.trades || 0;
-    const type = item?.type || 'BUY';
-    const asset = item?.asset || 'ETH';
-    const price = item?.price || 0;
+    const userName = item?.user?.name || 'Verified trader';
+    const rating = item?.user?.rating;
+    const trades = item?.user?.trades;
+    const type = item?.type;
+    const asset = item?.asset;
+    const price = item?.price;
     const paymentMethods = Array.isArray(item?.paymentMethods) ? item.paymentMethods : [];
 
     return (
@@ -66,9 +66,11 @@ const P2PMarketplace = () => {
             <View>
               <View style={styles.nameRow}>
                 <Text style={styles.userName}>{userName}</Text>
-                {rating >= 4.8 && <TextIcon label="OK" size={11} color={COLORS.secondary} />}
+                {typeof rating === 'number' && rating >= 4.8 && <TextIcon label="OK" size={11} color={COLORS.secondary} />}
               </View>
-              <Text style={styles.userStats}>{trades} trades - {Math.round(rating * 20)}% completion</Text>
+              {typeof trades === 'number' && typeof rating === 'number' ? (
+                <Text style={styles.userStats}>{trades} trades - {Math.round(rating * 20)}% completion</Text>
+              ) : null}
             </View>
           </View>
           <View style={[styles.typeBadge, type === 'SELL' ? styles.sellBadge : styles.buyBadge]}>
@@ -80,12 +82,14 @@ const P2PMarketplace = () => {
         
         <View style={styles.priceSection}>
           <View>
-            <Text style={styles.assetLabel}>{asset} Price</Text>
-            <Text style={styles.priceValue}>${price.toLocaleString()}</Text>
+            <Text style={styles.assetLabel}>{asset ? `${asset} Price` : 'Asset price'}</Text>
+            <Text style={styles.priceValue}>{typeof price === 'number' ? `$${price.toLocaleString()}` : 'Unavailable'}</Text>
           </View>
           <View style={styles.limitInfo}>
             <Text style={styles.limitLabel}>Available Limits</Text>
-            <Text style={styles.limitValue}>${item?.minAmount || 0} - ${item?.maxAmount || 0}</Text>
+            <Text style={styles.limitValue}>
+              {item?.minAmount && item?.maxAmount ? `$${item.minAmount} - $${item.maxAmount}` : 'Unavailable'}
+            </Text>
           </View>
         </View>
 

@@ -20,8 +20,8 @@ export class WalletsController {
     return this.walletsService.findByUserId(userId);
   }
 
-  @Get('custody/:userId')
-  async getCustodyProfile(@Param('userId') userId: string) {
-    return this.walletsService.getCustodyProfile(userId);
+  @Get('profile/:userId')
+  async getAccountProfile(@Param('userId') userId: string) {
+    return this.walletsService.getAccountProfile(userId);
   }
 }

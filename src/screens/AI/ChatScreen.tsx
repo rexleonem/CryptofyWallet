@@ -5,28 +5,15 @@ import { useAccountStore } from '../../store/walletStore';
 import { COLORS, SPACING, TYPOGRAPHY } from '../../constants/Theme';
 import { apiClient } from '../../api/client';
 import ChatBubble from '../../components/ChatBubble';
-import SuggestionChips from '../../components/SuggestionChips';
+import { CryptofyIcon } from '../../components/icons';
 
 export default function ChatScreen() {
   const navigation = useNavigation();
-  const { userId } = useAccountStore();
-  const [messages, setMessages] = useState<any[]>([
-    { 
-      id: '1', 
-      text: "I monitor your custodial portfolio, market exposure, risk, and opportunities. Ask me what changed and what deserves attention.", 
-      isUser: false 
-    }
-  ]);
+  const { address } = useAccountStore();
+  const [messages, setMessages] = useState<any[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const flatListRef = useRef<FlatList>(null);
-
-  const suggestions = [
-    "What changed today?",
-    "Analyze my risk level",
-    "Am I too exposed to ETH?",
-    "Summarize my portfolio"
-  ];
 
   const handleSend = async (text: string) => {
     if (!text.trim() || loading) return;
@@ -37,19 +24,19 @@ export default function ChatScreen() {
     setLoading(true);
 
     try {
-      const response = await apiClient.post('/ai/chat', { userId, message: text });
+      const response = await apiClient.post('/ai/chat', { address, message: text });
       const data = response.data;
       
       const aiMsg = { 
         id: (Date.now() + 1).toString(), 
-        text: data.response, 
+        text: data.response || data.message || 'AI service unavailable',
         isUser: false,
         insights: data.insights,
         actions: data.actions
       };
       setMessages(prev => [...prev, aiMsg]);
     } catch (error) {
-      setMessages(prev => [...prev, { id: 'err', text: "Sorry, I'm offline right now.", isUser: false }]);
+      setMessages(prev => [...prev, { id: `err-${Date.now()}`, text: 'AI service unavailable', isUser: false }]);
     } finally {
       setLoading(false);
     }
@@ -66,7 +53,12 @@ export default function ChatScreen() {
           <Text style={styles.backText}>Close</Text>
         </TouchableOpacity>
         <View style={styles.headerInfo}>
-          <Text style={styles.headerTitle}>Cryptofy Intelligence</Text>
+          <View style={styles.titleRow}>
+            <View style={styles.aiMark}>
+              <CryptofyIcon name="ai" size={16} color={COLORS.primaryLight} />
+            </View>
+            <Text style={styles.headerTitle}>Cryptofy Intelligence</Text>
+          </View>
           <Text style={styles.headerSubtitle}>Portfolio-aware - Real-time</Text>
         </View>
         <View style={{ width: 50 }} />
@@ -85,14 +77,18 @@ export default function ChatScreen() {
           />
         )}
         contentContainerStyle={styles.listContent}
+        ListEmptyComponent={
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyTitle}>No AI history yet</Text>
+            <Text style={styles.emptyText}>Ask a question when live intelligence is available for your account.</Text>
+          </View>
+        }
       />
 
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
       >
-        <SuggestionChips suggestions={suggestions} onSelect={handleSend} />
-        
         <View style={styles.inputContainer}>
           <TextInput
             style={styles.input}
@@ -131,6 +127,21 @@ const styles = StyleSheet.create({
   headerInfo: {
     alignItems: 'center',
   },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  aiMark: {
+    width: 28,
+    height: 28,
+    borderRadius: 12,
+    backgroundColor: 'rgba(10,132,255,0.14)',
+    borderWidth: 1,
+    borderColor: 'rgba(165,216,255,0.16)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   headerTitle: {
     ...TYPOGRAPHY.h2,
     fontSize: 16,
@@ -146,7 +157,24 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   listContent: {
+    flexGrow: 1,
     padding: SPACING.l,
+  },
+  emptyState: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.l,
+  },
+  emptyTitle: {
+    ...TYPOGRAPHY.h3,
+    marginBottom: 8,
+  },
+  emptyText: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.textMuted,
+    textAlign: 'center',
+    lineHeight: 22,
   },
   inputContainer: {
     flexDirection: 'row',

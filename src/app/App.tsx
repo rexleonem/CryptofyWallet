@@ -10,7 +10,7 @@ import { COLORS } from '../constants/Theme';
 // Screen imports
 import SplashScreen from '../screens/Splash/SplashScreen';
 import AuthScreen from '../screens/Auth/AuthScreen';
-import MainTabNavigator from '../navigation/MainTabNavigator';
+import MainTabNavigator from '../navigation';
 import SendScreen from '../screens/Transactions/SendScreen';
 import ConfirmScreen from '../screens/Transactions/ConfirmScreen';
 import ReceiveScreen from '../screens/Transactions/ReceiveScreen';
@@ -32,6 +32,7 @@ export default function App() {
               initialRouteName="Splash"
               screenOptions={{ 
                 headerShown: false,
+                animation: 'fade',
                 contentStyle: { backgroundColor: COLORS.background }
               }}
             >

@@ -7,15 +7,25 @@ export class BlockchainService {
   private providers: Map<string, ethers.JsonRpcProvider> = new Map();
 
   constructor(private configService: ConfigService) {
-    const alchemyKey = this.configService.get<string>('ALCHEMY_API_KEY') || '3xqHZz7DfKWBhtl4NHhQM';
-    
-    this.providers.set('ETH', new ethers.JsonRpcProvider(`https://eth-mainnet.g.alchemy.com/v2/${alchemyKey}`));
-    this.providers.set('POLYGON', new ethers.JsonRpcProvider(`https://polygon-mainnet.g.alchemy.com/v2/${alchemyKey}`));
-    this.providers.set('BSC', new ethers.JsonRpcProvider(this.configService.get<string>('BSC_RPC_URL') || 'https://bsc-dataseed.binance.org/'));
+    const alchemyKey = this.configService.get<string>('ALCHEMY_API_KEY');
+    const bscRpcUrl = this.configService.get<string>('BSC_RPC_URL');
+
+    if (alchemyKey) {
+      this.providers.set('ETH', new ethers.JsonRpcProvider(`https://eth-mainnet.g.alchemy.com/v2/${alchemyKey}`));
+      this.providers.set('POLYGON', new ethers.JsonRpcProvider(`https://polygon-mainnet.g.alchemy.com/v2/${alchemyKey}`));
+    }
+
+    if (bscRpcUrl) {
+      this.providers.set('BSC', new ethers.JsonRpcProvider(bscRpcUrl));
+    }
   }
 
   getProvider(chain = 'ETH') {
-    return this.providers.get(chain) || this.providers.get('ETH');
+    const provider = this.providers.get(chain) || this.providers.get('ETH');
+    if (!provider) {
+      throw new Error('Blockchain provider unavailable');
+    }
+    return provider;
   }
 
   async callWithRetry(fn: () => Promise<any>, retries = 3, delay = 1000): Promise<any> {

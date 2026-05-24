@@ -19,6 +19,17 @@ import PortfolioChart from '../../components/PortfolioChart';
 import TokenRow from '../../components/TokenRow';
 import TextIcon from '../../components/TextIcon';
 
+const formatCurrency = (value: string | null) => {
+  if (!value) {
+    return null;
+  }
+
+  const numeric = Number(value);
+  return Number.isFinite(numeric)
+    ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(numeric)
+    : null;
+};
+
 export default function PortfolioHomeScreen() {
   const navigation = useNavigation<any>();
   const { address } = useWalletStore();
@@ -30,7 +41,14 @@ export default function PortfolioHomeScreen() {
   const [timeFilter, setTimeFilter] = useState('7D');
 
   const fetchData = async () => {
-    if (!address) return;
+    if (!address) {
+      setPortfolio(null);
+      setHistory([]);
+      setLoading(false);
+      setRefreshing(false);
+      return;
+    }
+
     try {
       const [summary, historyData] = await Promise.all([
         fetchPortfolioSummary(address),
@@ -42,6 +60,8 @@ export default function PortfolioHomeScreen() {
     } catch (error) {
       console.error('Portfolio Fetch Error:', error);
       Alert.alert('Sync Error', 'Unable to fetch latest portfolio data.');
+      setPortfolio(null);
+      setHistory([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -68,9 +88,10 @@ export default function PortfolioHomeScreen() {
     );
   }
 
-  const change = portfolio?.change24h || 0;
-  const isPositive = change >= 0;
+  const change = portfolio?.change24h ?? null;
+  const isPositive = typeof change === 'number' && change >= 0;
   const tokens = portfolio?.tokens || [];
+  const netWorth = formatCurrency(portfolio?.totalValue ?? null);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -89,16 +110,22 @@ export default function PortfolioHomeScreen() {
       >
         <View style={styles.summaryCard}>
           <Text style={styles.summaryLabel}>Net Worth</Text>
-          <Text style={styles.summaryValue}>${parseFloat(portfolio?.totalValue || '0').toLocaleString()}</Text>
-          <View style={styles.performanceRow}>
-            <View style={[styles.badge, { backgroundColor: isPositive ? `${COLORS.success}15` : `${COLORS.error}15` }]}>
-              <TextIcon label={isPositive ? '+' : '-'} size={14} color={isPositive ? COLORS.success : COLORS.error} />
-              <Text style={[styles.badgeText, { color: isPositive ? COLORS.success : COLORS.error }]}>
-                {isPositive ? '+' : ''}{change}%
-              </Text>
+          {netWorth ? (
+            <Text style={styles.summaryValue}>{netWorth}</Text>
+          ) : (
+            <Text style={styles.summaryEmpty}>{address ? 'Value unavailable' : 'Portfolio will appear after account setup'}</Text>
+          )}
+          {typeof change === 'number' ? (
+            <View style={styles.performanceRow}>
+              <View style={[styles.badge, { backgroundColor: isPositive ? `${COLORS.success}15` : `${COLORS.error}15` }]}>
+                <TextIcon label={isPositive ? '+' : '-'} size={14} color={isPositive ? COLORS.success : COLORS.error} />
+                <Text style={[styles.badgeText, { color: isPositive ? COLORS.success : COLORS.error }]}>
+                  {isPositive ? '+' : ''}{change.toFixed(2)}%
+                </Text>
+              </View>
+              <Text style={styles.performancePeriod}>last 24 hours</Text>
             </View>
-            <Text style={styles.performancePeriod}>last 24 hours</Text>
-          </View>
+          ) : null}
         </View>
 
         <View style={styles.chartSection}>
@@ -115,7 +142,7 @@ export default function PortfolioHomeScreen() {
               ))}
             </View>
           </View>
-          <PortfolioChart data={history && history.length > 0 ? history : [0, 0, 0]} />
+          <PortfolioChart data={history} />
         </View>
 
         <View style={styles.aiSection}>
@@ -123,13 +150,10 @@ export default function PortfolioHomeScreen() {
             <TextIcon label="AI" size={16} color={COLORS.accent} />
             <Text style={styles.sectionTitle}>AI Insights</Text>
           </View>
-          <TouchableOpacity 
-            style={styles.insightCard}
-            onPress={() => navigation.navigate('InsightsDetail')}
-          >
+          <TouchableOpacity style={styles.insightCard} onPress={() => navigation.navigate('InsightsDetail')}>
             <View style={styles.insightContent}>
-              <Text style={styles.insightTitle}>Portfolio Diversification</Text>
-              <Text style={styles.insightMessage}>Consider diversifying your assets across different chains for better risk management.</Text>
+              <Text style={styles.insightTitle}>AI service unavailable</Text>
+              <Text style={styles.insightMessage}>Live insights will appear here when the intelligence service returns portfolio analysis.</Text>
             </View>
             <TextIcon label=">" size={20} color={COLORS.textMuted} />
           </TouchableOpacity>
@@ -144,11 +168,11 @@ export default function PortfolioHomeScreen() {
           {tokens.map((token: any, i: number) => (
             <TokenRow 
               key={`${token.symbol}-${i}`}
-              symbol={token.symbol || '???'}
-              name={token.name || 'Unknown Token'}
-              amount={token.amount || '0'}
-              value={token.value || '0'}
-              change24h={token.change24h || 0}
+              symbol={token.symbol}
+              name={token.name || token.symbol}
+              amount={token.amount}
+              value={token.value}
+              change24h={token.change24h}
               onPress={() => navigation.navigate('TokenDetail', { token })}
             />
           ))}
@@ -211,6 +235,12 @@ const styles = StyleSheet.create({
   summaryValue: {
     ...TYPOGRAPHY.balance,
     fontSize: 36,
+  },
+  summaryEmpty: {
+    ...TYPOGRAPHY.h3,
+    color: COLORS.textPrimary,
+    marginTop: 6,
+    lineHeight: 28,
   },
   performanceRow: {
     flexDirection: 'row',
