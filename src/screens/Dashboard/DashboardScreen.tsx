@@ -10,7 +10,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { apiClient } from '../../api/client';
-import { fetchPortfolioHistory, fetchPortfolioSummary, PortfolioSummary, TokenAsset } from '../../api/portfolio';
+import { fetchPortfolioHistory, fetchPortfolioSummary, fetchSupportedAssets, PortfolioSummary, SupportedAsset, TokenAsset } from '../../api/portfolio';
 import PortfolioChart from '../../components/PortfolioChart';
 import Skeleton from '../../components/Skeleton';
 import { CryptofyIcon, CryptofyIconName } from '../../components/icons';
@@ -77,6 +77,7 @@ export default function DashboardScreen() {
   const navigation = useNavigation<any>();
   const { name, address, email } = useAccountStore();
   const [portfolio, setPortfolio] = useState<PortfolioSummary | null>(null);
+  const [supportedAssets, setSupportedAssets] = useState<SupportedAsset[]>([]);
   const [history, setHistory] = useState<number[]>([]);
   const [insight, setInsight] = useState<AiInsight | null>(null);
   const [loading, setLoading] = useState(false);
@@ -100,6 +101,7 @@ export default function DashboardScreen() {
       setHistory([]);
       setInsight(null);
       setError(null);
+      fetchSupportedAssets().then(setSupportedAssets).catch(() => setSupportedAssets([]));
       return;
     }
 
@@ -107,15 +109,17 @@ export default function DashboardScreen() {
     setError(null);
 
     try {
-      const [summary, chart, aiResponse] = await Promise.all([
+      const [summary, chart, aiResponse, assets] = await Promise.all([
         fetchPortfolioSummary(address),
         fetchPortfolioHistory(address).catch(() => []),
         apiClient.get(`/ai/portfolio/${address}`).then(response => response.data).catch(() => null),
+        fetchSupportedAssets().catch(() => []),
       ]);
 
       setPortfolio(summary);
       setHistory(chart);
       setInsight(aiResponse?.insights?.[0] || aiResponse || null);
+      setSupportedAssets(assets);
     } catch {
       setError('Portfolio data unavailable');
       setPortfolio(null);
@@ -162,6 +166,13 @@ export default function DashboardScreen() {
       </Pressable>
     );
   };
+
+  const renderSupportedAsset = (item: SupportedAsset) => (
+    <View key={`${item.rank}-${item.symbol}`} style={styles.supportedAssetPill}>
+      <Text style={styles.supportedAssetSymbol}>{item.symbol}</Text>
+      <Text style={styles.supportedAssetName} numberOfLines={1}>{item.name}</Text>
+    </View>
+  );
 
   return (
     <SafeAreaView style={styles.container}>
@@ -281,6 +292,17 @@ export default function DashboardScreen() {
             </View>
           )}
         </View>
+
+        {supportedAssets.length > 0 ? (
+          <>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Supported Markets</Text>
+            </View>
+            <View style={styles.supportedGrid}>
+              {supportedAssets.map(renderSupportedAsset)}
+            </View>
+          </>
+        ) : null}
       </ScrollView>
     </SafeAreaView>
   );
@@ -377,8 +399,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   balanceCard: {
-    minHeight: 190,
-    borderRadius: 28,
+    minHeight: 168,
+    borderRadius: 24,
     padding: SPACING.l,
     borderWidth: 1,
     borderColor: 'rgba(165,216,255,0.18)',
@@ -419,7 +441,7 @@ const styles = StyleSheet.create({
   },
   balance: {
     ...TYPOGRAPHY.balance,
-    fontSize: 43,
+    fontSize: 34,
     letterSpacing: 0,
   },
   balanceSkeleton: {
@@ -696,5 +718,33 @@ const styles = StyleSheet.create({
     marginTop: 6,
     textAlign: 'center',
     lineHeight: 19,
+  },
+  supportedGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginBottom: SPACING.xxl,
+  },
+  supportedAssetPill: {
+    width: '30.5%',
+    minHeight: 68,
+    borderRadius: 18,
+    paddingHorizontal: 12,
+    paddingVertical: 11,
+    backgroundColor: 'rgba(16,24,42,0.76)',
+    borderWidth: 1,
+    borderColor: 'rgba(165,216,255,0.1)',
+    justifyContent: 'center',
+  },
+  supportedAssetSymbol: {
+    color: COLORS.primaryLight,
+    fontSize: 13,
+    fontWeight: '900',
+    marginBottom: 4,
+  },
+  supportedAssetName: {
+    color: COLORS.textSecondary,
+    fontSize: 11,
+    fontWeight: '700',
   },
 });

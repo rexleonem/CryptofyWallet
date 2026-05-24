@@ -1,4 +1,5 @@
 import { apiClient } from './client';
+import { SUPPORTED_ASSETS } from '../constants/supportedAssets';
 
 export interface TokenAsset {
   symbol: string;
@@ -16,6 +17,14 @@ export interface PortfolioSummary {
   tokens: TokenAsset[];
 }
 
+export interface SupportedAsset {
+  rank: number;
+  symbol: string;
+  name: string;
+  coingeckoId: string | null;
+  category: 'market' | 'cryptofy' | string;
+}
+
 export const fetchPortfolioSummary = async (address: string): Promise<PortfolioSummary> => {
   try {
     const response = await apiClient.get(`/portfolio/${address}`);
@@ -29,4 +38,13 @@ export const fetchPortfolioSummary = async (address: string): Promise<PortfolioS
 export const fetchPortfolioHistory = async (address: string): Promise<number[]> => {
   const response = await apiClient.get(`/portfolio/history/${address}`);
   return Array.isArray(response.data) ? response.data : [];
+};
+
+export const fetchSupportedAssets = async (): Promise<SupportedAsset[]> => {
+  try {
+    const response = await apiClient.get('/portfolio/assets/supported');
+    return Array.isArray(response.data) && response.data.length > 0 ? response.data : SUPPORTED_ASSETS;
+  } catch {
+    return SUPPORTED_ASSETS;
+  }
 };

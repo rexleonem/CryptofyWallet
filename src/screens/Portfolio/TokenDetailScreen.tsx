@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
   },
   price: {
     ...TYPOGRAPHY.balance,
-    fontSize: 32,
+    fontSize: 30,
     marginBottom: 8,
   },
   statsCard: {

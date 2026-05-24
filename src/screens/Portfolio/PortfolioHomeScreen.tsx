@@ -14,7 +14,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { useWalletStore } from '../../store/walletStore';
 import { COLORS, SPACING, TYPOGRAPHY } from '../../constants/Theme';
-import { fetchPortfolioSummary, fetchPortfolioHistory, PortfolioSummary } from '../../api/portfolio';
+import { fetchPortfolioSummary, fetchPortfolioHistory, fetchSupportedAssets, PortfolioSummary, SupportedAsset } from '../../api/portfolio';
 import PortfolioChart from '../../components/PortfolioChart';
 import TokenRow from '../../components/TokenRow';
 import TextIcon from '../../components/TextIcon';
@@ -38,25 +38,29 @@ export default function PortfolioHomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [portfolio, setPortfolio] = useState<PortfolioSummary | null>(null);
   const [history, setHistory] = useState<number[]>([]);
+  const [supportedAssets, setSupportedAssets] = useState<SupportedAsset[]>([]);
   const [timeFilter, setTimeFilter] = useState('7D');
 
   const fetchData = async () => {
     if (!address) {
       setPortfolio(null);
       setHistory([]);
+      fetchSupportedAssets().then(setSupportedAssets).catch(() => setSupportedAssets([]));
       setLoading(false);
       setRefreshing(false);
       return;
     }
 
     try {
-      const [summary, historyData] = await Promise.all([
+      const [summary, historyData, assets] = await Promise.all([
         fetchPortfolioSummary(address),
-        fetchPortfolioHistory(address)
+        fetchPortfolioHistory(address),
+        fetchSupportedAssets().catch(() => [])
       ]);
       
       setPortfolio(summary);
       setHistory(historyData);
+      setSupportedAssets(assets);
     } catch (error) {
       console.error('Portfolio Fetch Error:', error);
       Alert.alert('Sync Error', 'Unable to fetch latest portfolio data.');
@@ -184,6 +188,23 @@ export default function PortfolioHomeScreen() {
             <Text style={styles.emptySubtitle}>Your portfolio will appear here once you receive crypto.</Text>
           </View>
         )}
+
+        {supportedAssets.length > 0 && (
+          <View style={styles.supportedSection}>
+            <View style={styles.sectionHeaderRow}>
+              <TextIcon label="+" size={18} color={COLORS.primaryLight} />
+              <Text style={styles.sectionTitle}>Supported Markets</Text>
+            </View>
+            <View style={styles.supportedGrid}>
+              {supportedAssets.map(asset => (
+                <View key={`${asset.rank}-${asset.symbol}`} style={styles.supportedPill}>
+                  <Text style={styles.supportedSymbol}>{asset.symbol}</Text>
+                  <Text style={styles.supportedName} numberOfLines={1}>{asset.name}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -234,7 +255,7 @@ const styles = StyleSheet.create({
   },
   summaryValue: {
     ...TYPOGRAPHY.balance,
-    fontSize: 36,
+    fontSize: 32,
   },
   summaryEmpty: {
     ...TYPOGRAPHY.h3,
@@ -353,5 +374,36 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.body,
     textAlign: 'center',
     color: COLORS.textMuted,
+  },
+  supportedSection: {
+    marginTop: SPACING.m,
+    marginBottom: SPACING.xxl,
+  },
+  supportedGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  supportedPill: {
+    width: '30.5%',
+    minHeight: 66,
+    borderRadius: 18,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: 'rgba(16,24,42,0.82)',
+    borderWidth: 1,
+    borderColor: 'rgba(165,216,255,0.11)',
+    justifyContent: 'center',
+  },
+  supportedSymbol: {
+    color: COLORS.primaryLight,
+    fontSize: 13,
+    fontWeight: '900',
+    marginBottom: 4,
+  },
+  supportedName: {
+    color: COLORS.textSecondary,
+    fontSize: 11,
+    fontWeight: '700',
   },
 });

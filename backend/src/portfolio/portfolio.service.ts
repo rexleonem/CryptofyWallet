@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { BlockchainService } from '../blockchain/blockchain.service';
 import { ethers } from 'ethers';
-import { PORTFOLIO_CACHE_TTL, SUPPORTED_PORTFOLIO_CHAINS } from '../common/constants';
+import { PORTFOLIO_CACHE_TTL, SUPPORTED_ASSETS, SUPPORTED_PORTFOLIO_CHAINS } from '../common/constants';
 
 @Injectable()
 export class PortfolioService {
@@ -57,5 +57,9 @@ export class PortfolioService {
 
   async getHistory(address: string) {
     return [];
+  }
+
+  getSupportedAssets() {
+    return SUPPORTED_ASSETS;
   }
 }

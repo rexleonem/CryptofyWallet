@@ -6,6 +6,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import { COLORS } from '../constants/Theme';
+import { useAccountStore } from '../store/walletStore';
 
 // Screen imports
 import SplashScreen from '../screens/Splash/SplashScreen';
@@ -22,6 +23,8 @@ const Stack = createNativeStackNavigator();
 const queryClient = new QueryClient();
 
 export default function App() {
+  const isAuthenticated = useAccountStore((state) => state.isAuthenticated);
+
   try {
     return (
       <SafeAreaProvider>
@@ -37,14 +40,19 @@ export default function App() {
               }}
             >
               <Stack.Screen name="Splash" component={SplashScreen} />
-              <Stack.Screen name="Auth" component={AuthScreen} />
-              <Stack.Screen name="Main" component={MainTabNavigator} />
-              <Stack.Screen name="Send" component={SendScreen} />
-              <Stack.Screen name="ConfirmTransaction" component={ConfirmScreen} />
-              <Stack.Screen name="Receive" component={ReceiveScreen} />
-              <Stack.Screen name="History" component={HistoryScreen} />
-              <Stack.Screen name="TokenDetail" component={TokenDetailScreen} />
-              <Stack.Screen name="InsightsDetail" component={InsightsDetailScreen} />
+              {isAuthenticated ? (
+                <>
+                  <Stack.Screen name="Main" component={MainTabNavigator} />
+                  <Stack.Screen name="Send" component={SendScreen} />
+                  <Stack.Screen name="ConfirmTransaction" component={ConfirmScreen} />
+                  <Stack.Screen name="Receive" component={ReceiveScreen} />
+                  <Stack.Screen name="History" component={HistoryScreen} />
+                  <Stack.Screen name="TokenDetail" component={TokenDetailScreen} />
+                  <Stack.Screen name="InsightsDetail" component={InsightsDetailScreen} />
+                </>
+              ) : (
+                <Stack.Screen name="Auth" component={AuthScreen} />
+              )}
             </Stack.Navigator>
           </NavigationContainer>
         </QueryClientProvider>

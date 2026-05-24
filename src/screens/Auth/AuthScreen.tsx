@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
+  Alert,
   Image,
   KeyboardAvoidingView,
   Platform,
@@ -12,7 +13,6 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
 import Animated, {
   Easing,
@@ -26,6 +26,7 @@ import Animated, {
 
 import AnimatedGradientBackground from '../../components/backgrounds/AnimatedGradientBackground';
 import TextIcon from '../../components/TextIcon';
+import { authenticateWithEmail } from '../../api/auth';
 import { COLORS, SPACING, TYPOGRAPHY } from '../../constants/Theme';
 import { useAccountStore } from '../../store/walletStore';
 
@@ -62,12 +63,13 @@ function AnimatedPressable({ children, onPress, style }: AnimatedButtonProps) {
 }
 
 export default function AuthScreen() {
-  const navigation = useNavigation<any>();
   const signIn = useAccountStore((state) => state.signIn);
   const [mode, setMode] = useState<AuthMode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
   const logoGlow = useSharedValue(0);
   const contentOpacity = useSharedValue(0);
   const cardLift = useSharedValue(18);
@@ -85,9 +87,45 @@ export default function AuthScreen() {
     cardLift.value = withDelay(220, withTiming(0, { duration: 820, easing: Easing.out(Easing.cubic) }));
   }, [cardLift, contentOpacity, logoGlow]);
 
-  const completeAuth = (guest = false) => {
-    signIn(guest ? 'guest@cryptofy.ai' : email.trim(), guest ? 'Guest' : fullName.trim());
-    navigation.replace('Main');
+  const emailValue = email.trim();
+  const nameValue = fullName.trim();
+  const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue);
+  const isPasswordValid = password.length >= 8;
+  const canSubmit = isEmailValid && isPasswordValid && (mode === 'login' || nameValue.length >= 2);
+
+  const completeAuth = async () => {
+    if (!canSubmit || isSubmitting) {
+      Alert.alert(
+        mode === 'login' ? 'Check your login details' : 'Check your account details',
+        mode === 'login'
+          ? 'Enter a valid email and a password with at least 8 characters.'
+          : 'Enter your name, a valid email, and a password with at least 8 characters.',
+      );
+      return;
+    }
+
+    setIsSubmitting(true);
+    setAuthError(null);
+
+    try {
+      const user = await authenticateWithEmail({
+        email: emailValue,
+        password,
+        name: mode === 'signup' ? nameValue : undefined,
+      });
+      const walletAddress = user.wallets?.find(wallet => wallet.address)?.address || null;
+      signIn(user.email, user.name || nameValue || emailValue.split('@')[0] || 'there', user.id, walletAddress);
+    } catch (error: any) {
+      const message = error?.response?.data?.message || 'Unable to authenticate right now. Check your details and try again.';
+      setAuthError(Array.isArray(message) ? message[0] : message);
+      Alert.alert('Authentication failed', Array.isArray(message) ? message[0] : message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const unavailableOAuth = (provider: string) => {
+    Alert.alert(`${provider} sign-in unavailable`, `${provider} sign-in will be enabled once the secure provider connection is configured.`);
   };
 
   const logoStyle = useAnimatedStyle(() => ({
@@ -121,7 +159,7 @@ export default function AuthScreen() {
           </Animated.View>
 
           <Animated.View style={[styles.hero, copyStyle]}>
-            <Text style={styles.title}>AI-Powered Crypto Intelligence</Text>
+            <Text style={styles.title}>AI-Powered Financial Intelligence</Text>
             <Text style={styles.subtitle}>
               Track, understand, and grow your digital assets with real-time intelligence.
             </Text>
@@ -154,6 +192,7 @@ export default function AuthScreen() {
                   placeholder="Full name"
                   placeholderTextColor={COLORS.textMuted}
                   style={styles.input}
+                  returnKeyType="next"
                 />
               </View>
             )}
@@ -165,9 +204,12 @@ export default function AuthScreen() {
                 onChangeText={setEmail}
                 autoCapitalize="none"
                 keyboardType="email-address"
+                autoComplete="email"
+                textContentType="emailAddress"
                 placeholder="Email address"
                 placeholderTextColor={COLORS.textMuted}
                 style={styles.input}
+                returnKeyType="next"
               />
             </View>
 
@@ -177,15 +219,21 @@ export default function AuthScreen() {
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry
+                autoComplete={mode === 'login' ? 'password' : 'new-password'}
+                textContentType={mode === 'login' ? 'password' : 'newPassword'}
                 placeholder="Password"
                 placeholderTextColor={COLORS.textMuted}
                 style={styles.input}
+                returnKeyType="done"
+                onSubmitEditing={() => completeAuth()}
               />
             </View>
 
-            <AnimatedPressable onPress={() => completeAuth()} style={styles.ctaWrap}>
+            <AnimatedPressable onPress={() => completeAuth()} style={[styles.ctaWrap, !canSubmit && styles.disabledCta]}>
               <LinearGradient colors={['#0A84FF', '#3B82F6']} style={styles.primaryButton}>
-                <Text style={styles.primaryButtonText}>{mode === 'login' ? 'Login' : 'Create Account'}</Text>
+                <Text style={styles.primaryButtonText}>
+                  {isSubmitting ? 'One moment...' : mode === 'login' ? 'Login' : 'Create Account'}
+                </Text>
               </LinearGradient>
             </AnimatedPressable>
 
@@ -201,21 +249,19 @@ export default function AuthScreen() {
               <View style={styles.divider} />
             </View>
 
-            <TouchableOpacity style={styles.socialButton} activeOpacity={0.84} onPress={() => completeAuth()}>
+            {authError ? <Text style={styles.authError}>{authError}</Text> : null}
+
+            <TouchableOpacity style={styles.socialButton} activeOpacity={0.84} onPress={() => unavailableOAuth('Google')}>
               <Text style={styles.socialMark}>G</Text>
               <Text style={styles.socialText}>Continue with Google</Text>
             </TouchableOpacity>
 
             {Platform.OS === 'ios' && (
-              <TouchableOpacity style={styles.socialButton} activeOpacity={0.84} onPress={() => completeAuth()}>
+              <TouchableOpacity style={styles.socialButton} activeOpacity={0.84} onPress={() => unavailableOAuth('Apple')}>
                 <Text style={styles.socialMark}>A</Text>
                 <Text style={styles.socialText}>Continue with Apple</Text>
               </TouchableOpacity>
             )}
-
-            <TouchableOpacity style={styles.guestButton} activeOpacity={0.82} onPress={() => completeAuth(true)}>
-              <Text style={styles.guestText}>Continue as Guest</Text>
-            </TouchableOpacity>
           </Animated.View>
 
           <Animated.View style={[styles.securityStrip, copyStyle]}>
@@ -238,23 +284,22 @@ const styles = StyleSheet.create({
   },
   content: {
     flexGrow: 1,
-    padding: SPACING.l,
-    paddingTop: SPACING.xl,
-    justifyContent: 'space-between',
+    paddingHorizontal: SPACING.l,
+    paddingVertical: SPACING.m,
+    justifyContent: 'center',
   },
   logoWrap: {
     alignSelf: 'center',
-    width: 190,
-    height: 118,
+    width: 150,
+    height: 84,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: SPACING.s,
   },
   logoGlow: {
     position: 'absolute',
-    width: 168,
-    height: 82,
-    borderRadius: 42,
+    width: 126,
+    height: 62,
+    borderRadius: 31,
     backgroundColor: '#A5D8FF',
     shadowColor: '#A5D8FF',
     shadowOpacity: 0.65,
@@ -262,30 +307,32 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 0 },
   },
   logo: {
-    width: 160,
-    height: 82,
+    width: 126,
+    height: 64,
   },
   hero: {
     alignItems: 'center',
-    marginTop: SPACING.l,
-    marginBottom: SPACING.xl,
+    marginTop: SPACING.s,
+    marginBottom: SPACING.m,
   },
   title: {
     ...TYPOGRAPHY.h1,
     textAlign: 'center',
-    fontSize: 32,
-    lineHeight: 38,
+    fontSize: 25,
+    lineHeight: 30,
   },
   subtitle: {
     ...TYPOGRAPHY.body,
-    maxWidth: 330,
+    maxWidth: 315,
     textAlign: 'center',
-    marginTop: SPACING.m,
+    marginTop: SPACING.s,
     color: 'rgba(230,238,255,0.76)',
+    fontSize: 13,
+    lineHeight: 18,
   },
   authCard: {
-    borderRadius: 30,
-    padding: SPACING.m,
+    borderRadius: 24,
+    padding: 14,
     backgroundColor: 'rgba(16,24,42,0.62)',
     borderWidth: 1,
     borderColor: 'rgba(165,216,255,0.22)',
@@ -293,7 +340,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.24,
     shadowRadius: 28,
     shadowOffset: { width: 0, height: 18 },
-    gap: SPACING.m,
+    gap: 10,
   },
   modeRow: {
     flexDirection: 'row',
@@ -306,7 +353,7 @@ const styles = StyleSheet.create({
   },
   modeButton: {
     flex: 1,
-    height: 44,
+    height: 38,
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
@@ -325,8 +372,8 @@ const styles = StyleSheet.create({
     color: COLORS.white,
   },
   inputWrap: {
-    minHeight: 58,
-    borderRadius: 18,
+    minHeight: 48,
+    borderRadius: 16,
     backgroundColor: 'rgba(5,8,22,0.46)',
     borderWidth: 1,
     borderColor: 'rgba(182,194,217,0.16)',
@@ -339,13 +386,14 @@ const styles = StyleSheet.create({
     flex: 1,
     color: COLORS.textPrimary,
     fontSize: 15,
+    paddingVertical: Platform.OS === 'android' ? 6 : 0,
   },
   ctaWrap: {
     borderRadius: 20,
   },
   primaryButton: {
-    height: 58,
-    borderRadius: 20,
+    height: 50,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: COLORS.primary,
@@ -359,8 +407,8 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
   outlineButton: {
-    height: 56,
-    borderRadius: 20,
+    height: 48,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.06)',
@@ -388,7 +436,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   socialButton: {
-    minHeight: 52,
+    minHeight: 46,
     borderRadius: 18,
     backgroundColor: 'rgba(255,255,255,0.08)',
     borderWidth: 1,
@@ -408,17 +456,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '800',
   },
-  guestButton: {
-    alignItems: 'center',
-    paddingVertical: SPACING.s,
-  },
-  guestText: {
-    color: COLORS.textSecondary,
-    fontSize: 13,
-    fontWeight: '800',
+  authError: {
+    color: COLORS.error,
+    fontSize: 12,
+    fontWeight: '700',
+    textAlign: 'center',
   },
   securityStrip: {
-    marginTop: SPACING.xl,
+    marginTop: SPACING.m,
     alignSelf: 'center',
     flexDirection: 'row',
     gap: 9,
@@ -428,6 +473,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(34,197,94,0.08)',
     borderWidth: 1,
     borderColor: 'rgba(34,197,94,0.16)',
+  },
+  disabledCta: {
+    opacity: 0.56,
   },
   securityText: {
     color: 'rgba(230,238,255,0.72)',

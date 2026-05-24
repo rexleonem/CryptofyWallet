@@ -22,47 +22,47 @@ export const COLORS = {
 export const SPACING = {
   xs: 4,
   s: 8,
-  m: 16,
-  l: 24,
-  xl: 32,
-  xxl: 48,
+  m: 14,
+  l: 18,
+  xl: 24,
+  xxl: 36,
 };
 
 export const TYPOGRAPHY = {
   h1: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: '700' as const,
     color: COLORS.textPrimary,
-    lineHeight: 40,
+    lineHeight: 34,
   },
   h2: {
-    fontSize: 24,
+    fontSize: 21,
     fontWeight: '700' as const,
-    color: COLORS.textPrimary,
-    lineHeight: 32,
-  },
-  h3: {
-    fontSize: 20,
-    fontWeight: '600' as const,
     color: COLORS.textPrimary,
     lineHeight: 28,
   },
-  balance: {
-    fontSize: 42,
-    fontWeight: '800' as const,
-    color: COLORS.textPrimary,
-    letterSpacing: -1,
-  },
-  body: {
-    fontSize: 16,
-    color: COLORS.textSecondary,
-    lineHeight: 24,
-  },
-  bodyBold: {
-    fontSize: 16,
+  h3: {
+    fontSize: 18,
     fontWeight: '600' as const,
     color: COLORS.textPrimary,
     lineHeight: 24,
+  },
+  balance: {
+    fontSize: 34,
+    fontWeight: '800' as const,
+    color: COLORS.textPrimary,
+    letterSpacing: 0,
+  },
+  body: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    lineHeight: 20,
+  },
+  bodyBold: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: COLORS.textPrimary,
+    lineHeight: 20,
   },
   small: {
     fontSize: 13,

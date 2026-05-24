@@ -29,7 +29,7 @@ export default function MainTabNavigator() {
     tabBarStyle: [
       styles.tabBar,
       {
-        height: 70,
+        height: 64,
         bottom: bottomOffset,
       },
     ],
@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
     elevation: Platform.OS === 'android' ? 18 : 0,
   },
   tabBarItem: {
-    height: 54,
+    height: 48,
     borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',

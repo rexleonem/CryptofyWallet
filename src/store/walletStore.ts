@@ -9,7 +9,7 @@ interface AccountState {
   isAuthenticated: boolean;
   isUnlocked: boolean;
   biometricEnabled: boolean;
-  signIn: (email?: string | null, name?: string) => void;
+  signIn: (email?: string | null, name?: string, userId?: string | null, address?: string | null) => void;
   signOut: () => void;
   setDepositAddress: (address: string | null) => void;
   setAddress: (address: string | null) => void;
@@ -27,13 +27,13 @@ export const useAccountStore = create<AccountState>((set) => ({
   isAuthenticated: false,
   isUnlocked: false,
   biometricEnabled: true,
-  signIn: (email, name = DEFAULT_ACCOUNT_NAME) =>
+  signIn: (email, name = DEFAULT_ACCOUNT_NAME, userId, address) =>
     set({
-      userId: `acct_${Date.now()}`,
+      userId: userId || null,
       name: name.trim() || DEFAULT_ACCOUNT_NAME,
       email: email || null,
-      address: null,
-      depositAddress: null,
+      address: address || null,
+      depositAddress: address || null,
       isAuthenticated: true,
       isUnlocked: true,
     }),
