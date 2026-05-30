@@ -1,9 +1,12 @@
-import { Controller, Get, Post, Body, Query, Param } from '@nestjs/common';
+import { Body, Controller, ForbiddenException, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { OfferService } from './offer.service';
 import { TradeService } from './trade.service';
 import { OfferType, TradeStatus } from '@prisma/client';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { CurrentUser } from '../auth/current-user.decorator';
 
 @Controller('p2p')
+@UseGuards(JwtAuthGuard)
 export class P2pController {
   constructor(
     private readonly offerService: OfferService,
@@ -11,8 +14,8 @@ export class P2pController {
   ) {}
 
   @Post('offers')
-  createOffer(@Body() data: any) {
-    return this.offerService.createOffer(data);
+  createOffer(@Body() data: any, @CurrentUser() user: any) {
+    return this.offerService.createOffer({ ...data, userId: user.sub });
   }
 
   @Get('offers')
@@ -21,12 +24,15 @@ export class P2pController {
   }
 
   @Post('trades')
-  initiateTrade(@Body() data: any) {
-    return this.tradeService.initiateTrade(data);
+  initiateTrade(@Body() data: any, @CurrentUser() user: any) {
+    return this.tradeService.initiateTrade({ ...data, buyerId: user.sub });
   }
 
   @Get('trades/:userId')
-  getUserTrades(@Param('userId') userId: string) {
+  getUserTrades(@Param('userId') userId: string, @CurrentUser() user: any) {
+    if (userId !== user.sub && user.role !== 'ADMIN') {
+      throw new ForbiddenException();
+    }
     return this.tradeService.findUserTrades(userId);
   }
 

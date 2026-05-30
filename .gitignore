@@ -104,3 +104,7 @@ android/gradle/wrapper/gradle-wrapper.jar
 !.yarn/sdks
 !.yarn/versions
 
+# Compiled Binaries
+*.apk
+
+

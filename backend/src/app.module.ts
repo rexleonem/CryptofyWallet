@@ -9,12 +9,20 @@ import { PrismaModule } from './prisma/prisma.module';
 import { P2pModule } from './p2p/p2p.module';
 import { BlockchainModule } from './blockchain/blockchain.module';
 import { TransactionModule } from './transaction/transaction.module';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60_000,
+        limit: 120,
+      },
+    ]),
     AuthModule,
     WalletsModule,
     PortfolioModule,
@@ -25,5 +33,11 @@ import { TransactionModule } from './transaction/transaction.module';
     TransactionModule,
   ],
   controllers: [AppController],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class AppModule {}

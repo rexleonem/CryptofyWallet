@@ -17,8 +17,14 @@ model User {
   email     String?  @unique
   name      String?
   plan      String   @default("USER")
+  role      String   @default("USER")
+  passwordHash String?
+  mfaEnabled Boolean @default(false)
+  mfaSecretEnc String?
   wallets   Wallet[]
   offers    Offer[]
+  sessions  Session[]
+  withdrawals Withdrawal[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -28,11 +34,45 @@ model Wallet {
   address      String     @unique
   label        String?
   network      String     @default("ethereum")
+  custodyProvider String  @default("LOCAL_VAULT")
+  keyVersion   Int        @default(1)
+  encryptedPrivateKey String?
   userId       String
   user         User       @relation(fields: [userId], references: [id])
   portfolios   Portfolio[]
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
+}
+
+model Session {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+  deviceId        String
+  refreshTokenSha String   @unique
+  ip              String?
+  userAgent       String?
+  createdAt       DateTime @default(now())
+  lastUsedAt      DateTime @default(now())
+  revokedAt       DateTime?
+}
+
+model Withdrawal {
+  id             String   @id @default(uuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id])
+  walletAddress  String
+  asset          String
+  chain          String
+  to             String
+  amount         String
+  idempotencyKey String
+  status         String   @default("PENDING")
+  txHash         String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([userId, idempotencyKey])
 }
 
 model Portfolio {

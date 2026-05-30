@@ -26,7 +26,7 @@ import Animated, {
 
 import AnimatedGradientBackground from '../../components/backgrounds/AnimatedGradientBackground';
 import TextIcon from '../../components/TextIcon';
-import { authenticateWithEmail } from '../../api/auth';
+import { loginWithEmail, signUpWithEmail } from '../../api/auth';
 import { COLORS, SPACING, TYPOGRAPHY } from '../../constants/Theme';
 import { useAccountStore } from '../../store/walletStore';
 
@@ -108,11 +108,11 @@ export default function AuthScreen() {
     setAuthError(null);
 
     try {
-      const user = await authenticateWithEmail({
-        email: emailValue,
-        password,
-        name: mode === 'signup' ? nameValue : undefined,
-      });
+      const authResponse = mode === 'signup'
+        ? await signUpWithEmail({ email: emailValue, password, name: nameValue })
+        : await loginWithEmail({ email: emailValue, password });
+
+      const user = authResponse.user;
       const walletAddress = user.wallets?.find(wallet => wallet.address)?.address || null;
       signIn(user.email, user.name || nameValue || emailValue.split('@')[0] || 'there', user.id, walletAddress);
     } catch (error: any) {

@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from typing import List
 from engine.ai_advisor import get_p2p_price_suggestion, analyze_trade_risk
 
-router = APIRouter()
+router = APIRouter(tags=["P2P Intelligence"])
 
 class PriceSuggestionRequest(BaseModel):
     asset: str
@@ -16,8 +16,10 @@ class TradeRiskRequest(BaseModel):
 
 @router.post("/suggest-price")
 async def suggest_price(request: PriceSuggestionRequest):
-    return {"message": "AI service unavailable"}
+    val = await get_p2p_price_suggestion(request.asset, request.market_price)
+    return {"suggested_price": val}
 
 @router.post("/analyze-risk")
 async def analyze_risk(request: TradeRiskRequest):
-    return {"message": "AI service unavailable"}
+    val = await analyze_trade_risk(request.user_id, request.trade_amount, request.user_reputation)
+    return {"risk_score": val}

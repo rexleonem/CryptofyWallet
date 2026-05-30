@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
-from routers import chat, insights, p2p, market, history
+from routes import chat, insights, p2p, market, history, intent
 import models
 from database import engine
 
@@ -17,7 +17,9 @@ app.include_router(insights.router, prefix="/api")
 app.include_router(p2p.router, prefix="/api")
 app.include_router(market.router, prefix="/api")
 app.include_router(history.router, prefix="/api")
+app.include_router(intent.router, prefix="/api")
 
 @app.get("/health")
 def health_check():
     return {"status": "ok"}
+

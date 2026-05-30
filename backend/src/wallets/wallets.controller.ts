@@ -1,7 +1,10 @@
-import { Controller, Get, Param, Post, Body } from '@nestjs/common';
+import { Body, Controller, ForbiddenException, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { WalletsService } from './wallets.service';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { CurrentUser } from '../auth/current-user.decorator';
 
 @Controller('wallets')
+@UseGuards(JwtAuthGuard)
 export class WalletsController {
   constructor(private readonly walletsService: WalletsService) {}
 
@@ -11,17 +14,23 @@ export class WalletsController {
   }
   
   @Post('create')
-  async createWallet(@Body() body: { userId: string, label?: string, network?: string }) {
-    return this.walletsService.createWallet(body.userId, body.label, body.network);
+  async createWallet(@Body() body: { label?: string, network?: string }, @CurrentUser() user: any) {
+    return this.walletsService.createWallet(user.sub, body.label, body.network);
   }
 
   @Get('user/:userId')
-  async getUserWallets(@Param('userId') userId: string) {
+  async getUserWallets(@Param('userId') userId: string, @CurrentUser() user: any) {
+    if (userId !== user.sub && user.role !== 'ADMIN') {
+      throw new ForbiddenException();
+    }
     return this.walletsService.findByUserId(userId);
   }
 
   @Get('profile/:userId')
-  async getAccountProfile(@Param('userId') userId: string) {
+  async getAccountProfile(@Param('userId') userId: string, @CurrentUser() user: any) {
+    if (userId !== user.sub && user.role !== 'ADMIN') {
+      throw new ForbiddenException();
+    }
     return this.walletsService.getAccountProfile(userId);
   }
 }

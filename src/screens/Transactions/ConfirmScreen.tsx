@@ -1,16 +1,18 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Animated, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Animated, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 
 import TextIcon from '../../components/TextIcon';
 import { COLORS, SPACING, TYPOGRAPHY } from '../../constants/Theme';
 import { useAccountStore } from '../../store/walletStore';
+import { requestWithdrawal } from '../../api/transactions';
 
 export default function ConfirmScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const { recipient, amount, gasFee, speed, assetSymbol } = route.params;
   const { depositAddress } = useAccountStore();
+  const [mfaCode, setMfaCode] = useState('');
   const [countdown, setCountdown] = useState(3);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPressing, setIsPressing] = useState(false);
@@ -38,14 +40,24 @@ export default function ConfirmScreen() {
   const handleConfirm = async () => {
     if (isSubmitting) return;
     setIsSubmitting(true);
-    setTimeout(() => {
+    try {
+      const idempotencyKey = `wd_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+      await requestWithdrawal({
+        asset: assetSymbol,
+        network: 'ETH',
+        to: recipient,
+        amount,
+        idempotencyKey,
+        mfaCode: mfaCode.trim(),
+      });
+      Alert.alert('Withdrawal broadcast', 'Your transfer was submitted to the network.', [
+        { text: 'Done', onPress: () => navigation.navigate('Main') },
+      ]);
+    } catch (e: any) {
+      Alert.alert('Withdrawal failed', e?.response?.data?.message || e?.message || 'Unable to submit withdrawal.');
+    } finally {
       setIsSubmitting(false);
-      Alert.alert(
-        'Withdrawal submitted',
-        'Cryptofy is reviewing this transfer with your security settings before submission.',
-        [{ text: 'Done', onPress: () => navigation.navigate('Main') }],
-      );
-    }, 900);
+    }
   };
 
   const widthInterpolate = progress.interpolate({
@@ -91,17 +103,31 @@ export default function ConfirmScreen() {
         <Text style={styles.deviceText}>Device session, withdrawal limits, and confirmation policy will be enforced before chain submission.</Text>
       </View>
 
+      <View style={styles.mfaCard}>
+        <Text style={styles.mfaLabel}>Authenticator code</Text>
+        <View style={styles.mfaInputRow}>
+          <TextInput
+            value={mfaCode}
+            onChangeText={setMfaCode}
+            placeholder="6-digit code"
+            placeholderTextColor={COLORS.textMuted}
+            keyboardType="number-pad"
+            style={styles.mfaInput}
+          />
+        </View>
+      </View>
+
       <View style={styles.footer}>
         <View style={[styles.button, countdown > 0 && styles.disabledButton]}>
           <TouchableOpacity
             style={StyleSheet.absoluteFill}
             onPressIn={() => setIsPressing(true)}
             onPressOut={() => setIsPressing(false)}
-            disabled={countdown > 0 || isSubmitting}
+            disabled={countdown > 0 || isSubmitting || mfaCode.trim().length < 6}
           >
             <Animated.View style={[styles.progressOverlay, { width: widthInterpolate }]} />
             <View style={styles.buttonContent}>
-              {isSubmitting ? (
+                  {isSubmitting ? (
                 <ActivityIndicator color={COLORS.white} />
               ) : (
                 <Text style={styles.buttonText}>
@@ -202,6 +228,35 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     fontSize: 12,
     lineHeight: 18,
+  },
+  mfaCard: {
+    marginTop: SPACING.m,
+    backgroundColor: COLORS.card,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    padding: SPACING.m,
+  },
+  mfaLabel: {
+    color: COLORS.textMuted,
+    fontSize: 12,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  mfaInputRow: {
+    borderRadius: 14,
+    backgroundColor: 'rgba(5,8,22,0.46)',
+    borderWidth: 1,
+    borderColor: 'rgba(182,194,217,0.16)',
+    paddingHorizontal: 12,
+    height: 46,
+    justifyContent: 'center',
+  },
+  mfaInput: {
+    color: COLORS.textPrimary,
+    fontSize: 16,
+    fontWeight: '800',
+    letterSpacing: 2,
   },
   footer: {
     marginTop: 'auto',

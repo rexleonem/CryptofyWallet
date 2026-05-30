@@ -2,13 +2,22 @@ import { Injectable } from '@nestjs/common';
 import { BlockchainService } from '../blockchain/blockchain.service';
 import { ethers } from 'ethers';
 import { PORTFOLIO_CACHE_TTL, SUPPORTED_ASSETS, SUPPORTED_PORTFOLIO_CHAINS } from '../common/constants';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class PortfolioService {
   private cache = new Map<string, { data: any, timestamp: number }>();
   private CACHE_TTL = PORTFOLIO_CACHE_TTL;
 
-  constructor(private blockchainService: BlockchainService) {}
+  constructor(private blockchainService: BlockchainService, private prisma: PrismaService) {}
+
+  async assertWalletOwnership(userId: string, address: string) {
+    const wallet = await this.prisma.wallet.findFirst({ where: { userId, address } });
+    if (!wallet) {
+      throw new Error('Wallet not found for user');
+    }
+    return wallet;
+  }
 
   async getSummary(address: string) {
     const cached = this.cache.get(address);

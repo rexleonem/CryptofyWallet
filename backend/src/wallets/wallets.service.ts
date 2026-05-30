@@ -1,7 +1,8 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ethers } from 'ethers';
 import { PrismaService } from '../prisma/prisma.service';
+import { encryptWithMasterKey } from '../common/crypto';
 
 @Injectable()
 export class WalletsService {
@@ -41,6 +42,13 @@ export class WalletsService {
 
   async createWallet(userId: string, label = 'Cryptofy Account', network = 'ethereum') {
     const wallet = ethers.Wallet.createRandom();
+    let encryptedPrivateKey: string | null = null;
+    try {
+      const payload = encryptWithMasterKey(wallet.privateKey, 1);
+      encryptedPrivateKey = JSON.stringify(payload);
+    } catch {
+      throw new ServiceUnavailableException('Vault master key not configured');
+    }
 
     return this.prisma.wallet.create({
       data: {
@@ -48,6 +56,9 @@ export class WalletsService {
         address: wallet.address,
         label,
         network,
+        custodyProvider: 'LOCAL_VAULT',
+        keyVersion: 1,
+        encryptedPrivateKey,
       },
     });
   }
