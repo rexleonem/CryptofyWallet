@@ -89,8 +89,10 @@ export default function AuthScreen() {
 
   const emailValue = email.trim();
   const nameValue = fullName.trim();
+  // Avoid invisible whitespace causing "Invalid credentials" when users paste or use autofill.
+  const passwordValue = password.trim();
   const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue);
-  const isPasswordValid = password.length >= 8;
+  const isPasswordValid = passwordValue.length >= 8;
   const canSubmit = isEmailValid && isPasswordValid && (mode === 'login' || nameValue.length >= 2);
 
   const completeAuth = async () => {
@@ -109,8 +111,8 @@ export default function AuthScreen() {
 
     try {
       const authResponse = mode === 'signup'
-        ? await signUpWithEmail({ email: emailValue, password, name: nameValue })
-        : await loginWithEmail({ email: emailValue, password });
+        ? await signUpWithEmail({ email: emailValue, password: passwordValue, name: nameValue })
+        : await loginWithEmail({ email: emailValue, password: passwordValue });
 
       const user = authResponse.user;
       const walletAddress = user.wallets?.find(wallet => wallet.address)?.address || null;
@@ -219,6 +221,8 @@ export default function AuthScreen() {
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry
+                autoCorrect={false}
+                autoCapitalize="none"
                 autoComplete={mode === 'login' ? 'password' : 'new-password'}
                 textContentType={mode === 'login' ? 'password' : 'newPassword'}
                 placeholder="Password"
