@@ -48,3 +48,16 @@ export const fetchSupportedAssets = async (): Promise<SupportedAsset[]> => {
     return SUPPORTED_ASSETS;
   }
 };
+
+export async function addAssetToPortfolio(
+  address: string,
+  input: { symbol: string; amount: string; name?: string; chain?: string; coingeckoId?: string | null },
+): Promise<{ ok: true; assets: any[] }> {
+  const response = await apiClient.post(`/portfolio/${address}/assets`, input);
+  return response.data;
+}
+
+export async function removeAssetFromPortfolio(address: string, symbol: string): Promise<{ ok: true; assets: any[] }> {
+  const response = await apiClient.delete(`/portfolio/${address}/assets/${encodeURIComponent(symbol)}`);
+  return response.data;
+}

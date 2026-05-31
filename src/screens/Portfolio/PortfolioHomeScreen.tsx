@@ -8,7 +8,9 @@ import {
   TouchableOpacity, 
   ActivityIndicator,
   StatusBar,
-  Alert
+  Alert,
+  Modal,
+  TextInput
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
@@ -16,6 +18,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useWalletStore } from '../../store/walletStore';
 import { COLORS, SPACING, TYPOGRAPHY } from '../../constants/Theme';
 import { fetchPortfolioSummary, fetchPortfolioHistory, fetchSupportedAssets, PortfolioSummary, SupportedAsset } from '../../api/portfolio';
+import { addAssetToPortfolio } from '../../api/portfolio';
 import PortfolioChart from '../../components/PortfolioChart';
 import TokenRow from '../../components/TokenRow';
 import TextIcon from '../../components/TextIcon';
@@ -36,6 +39,10 @@ export default function PortfolioHomeScreen() {
   const { address } = useWalletStore();
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
+
+  const [addVisible, setAddVisible] = useState(false);
+  const [selectedAsset, setSelectedAsset] = useState<SupportedAsset | null>(null);
+  const [assetAmount, setAssetAmount] = useState('');
   
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -84,6 +91,37 @@ export default function PortfolioHomeScreen() {
     fetchData();
   };
 
+  const addAsset = async () => {
+    if (!address) {
+      Alert.alert('Unavailable', 'Your portfolio will appear after account setup.');
+      return;
+    }
+    const amount = assetAmount.trim();
+    if (!selectedAsset) {
+      Alert.alert('Select an asset', 'Choose an asset to add.');
+      return;
+    }
+    if (!/^\d+(\.\d+)?$/.test(amount)) {
+      Alert.alert('Enter an amount', 'Amount must be a numeric value.');
+      return;
+    }
+
+    try {
+      await addAssetToPortfolio(address, {
+        symbol: selectedAsset.symbol,
+        name: selectedAsset.name,
+        coingeckoId: selectedAsset.coingeckoId,
+        amount,
+      });
+      setAddVisible(false);
+      setSelectedAsset(null);
+      setAssetAmount('');
+      onRefresh();
+    } catch (e: any) {
+      Alert.alert('Unable to add asset', e?.response?.data?.message || 'Please try again.');
+    }
+  };
+
   if (loading && !refreshing) {
     return (
       <SafeAreaView style={styles.container}>
@@ -105,8 +143,8 @@ export default function PortfolioHomeScreen() {
       <StatusBar barStyle="light-content" />
       <View style={styles.header}>
         <Text style={TYPOGRAPHY.h2}>Portfolio</Text>
-        <TouchableOpacity style={styles.filterButton}>
-          <TextIcon label="F" size={18} color={COLORS.textPrimary} />
+        <TouchableOpacity style={styles.filterButton} onPress={() => setAddVisible(true)}>
+          <TextIcon label="+" size={18} color={COLORS.textPrimary} />
         </TouchableOpacity>
       </View>
 
@@ -212,6 +250,58 @@ export default function PortfolioHomeScreen() {
           </View>
         )}
       </ScrollView>
+
+      <Modal visible={addVisible} transparent animationType="fade" onRequestClose={() => setAddVisible(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Add Asset</Text>
+            <Text style={styles.modalSubtitle}>Choose an asset and enter the amount you own.</Text>
+
+            <ScrollView style={styles.assetPicker} contentContainerStyle={styles.assetPickerContent} showsVerticalScrollIndicator={false}>
+              {supportedAssets.map((asset) => {
+                const active = selectedAsset?.symbol === asset.symbol;
+                return (
+                  <TouchableOpacity
+                    key={`${asset.rank}-${asset.symbol}`}
+                    style={[styles.assetOption, active && styles.assetOptionActive]}
+                    onPress={() => setSelectedAsset(asset)}
+                    activeOpacity={0.86}
+                  >
+                    <View style={styles.assetOptionLeft}>
+                      <View style={[styles.assetDot, active && styles.assetDotActive]} />
+                      <View>
+                        <Text style={styles.assetOptionSymbol}>{asset.symbol}</Text>
+                        <Text style={styles.assetOptionName} numberOfLines={1}>{asset.name}</Text>
+                      </View>
+                    </View>
+                    <Text style={styles.assetOptionCategory}>{asset.category === 'cryptofy' ? 'Cryptofy' : 'Market'}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+
+            <TextInput
+              value={assetAmount}
+              onChangeText={setAssetAmount}
+              placeholder="Amount (e.g. 0.5)"
+              placeholderTextColor={COLORS.textMuted}
+              keyboardType="decimal-pad"
+              style={styles.modalInput}
+            />
+
+            <TouchableOpacity
+              style={[styles.modalButton, (!selectedAsset || assetAmount.trim().length === 0) && styles.modalButtonDisabled]}
+              onPress={addAsset}
+              disabled={!selectedAsset || assetAmount.trim().length === 0}
+            >
+              <Text style={styles.modalButtonText}>Add</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.modalCancel} onPress={() => setAddVisible(false)}>
+              <Text style={styles.modalCancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -411,5 +501,128 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     fontSize: 11,
     fontWeight: '700',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    padding: SPACING.l,
+  },
+  modalCard: {
+    backgroundColor: 'rgba(16,24,42,0.96)',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(165,216,255,0.18)',
+    padding: SPACING.l,
+    maxHeight: '82%',
+  },
+  modalTitle: {
+    color: COLORS.textPrimary,
+    fontSize: 18,
+    fontWeight: '900',
+  },
+  modalSubtitle: {
+    color: COLORS.textSecondary,
+    marginTop: 6,
+    fontSize: 12,
+    lineHeight: 17,
+    marginBottom: 12,
+  },
+  assetPicker: {
+    marginBottom: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: 'rgba(5,8,22,0.38)',
+  },
+  assetPickerContent: {
+    padding: 10,
+    gap: 8,
+  },
+  assetOption: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: 'rgba(255,255,255,0.03)',
+  },
+  assetOptionActive: {
+    borderColor: 'rgba(165,216,255,0.22)',
+    backgroundColor: 'rgba(10,132,255,0.12)',
+  },
+  assetOptionLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  assetDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: 'rgba(182,194,217,0.5)',
+  },
+  assetDotActive: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  assetOptionSymbol: {
+    color: COLORS.textPrimary,
+    fontWeight: '900',
+    fontSize: 13,
+  },
+  assetOptionName: {
+    color: COLORS.textMuted,
+    fontWeight: '700',
+    fontSize: 11,
+    marginTop: 2,
+    maxWidth: 180,
+  },
+  assetOptionCategory: {
+    color: COLORS.textMuted,
+    fontSize: 11,
+    fontWeight: '800',
+    marginLeft: 10,
+  },
+  modalInput: {
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: 'rgba(5,8,22,0.46)',
+    borderWidth: 1,
+    borderColor: 'rgba(182,194,217,0.16)',
+    paddingHorizontal: 12,
+    color: COLORS.textPrimary,
+    fontSize: 16,
+    fontWeight: '800',
+    marginBottom: 12,
+  },
+  modalButton: {
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: COLORS.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalButtonDisabled: {
+    opacity: 0.5,
+  },
+  modalButtonText: {
+    color: COLORS.white,
+    fontSize: 15,
+    fontWeight: '900',
+  },
+  modalCancel: {
+    alignItems: 'center',
+    paddingVertical: 10,
+    marginTop: 6,
+  },
+  modalCancelText: {
+    color: COLORS.textMuted,
+    fontSize: 13,
+    fontWeight: '800',
   },
 });

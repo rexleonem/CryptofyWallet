@@ -71,6 +71,14 @@ export class AuthService {
           encryptedPrivateKey: JSON.stringify(keyPayload),
         },
       });
+      // Create an empty portfolio container for user-managed positions.
+      await this.prisma.portfolio.create({
+        data: {
+          name: 'Main Portfolio',
+          walletId: wallet.address,
+          assets: [],
+        },
+      });
     } catch (e: any) {
       // Distinguish vault misconfig from DB/model issues (migrations, constraints, etc).
       // We log server-side for diagnostics but return a safe message to clients.
