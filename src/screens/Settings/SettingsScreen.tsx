@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { Alert, Modal, TextInput, View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView } from 'react-native';
+import { Alert, Modal, TextInput, View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { useAccountStore } from '../../store/walletStore';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, SPACING, TYPOGRAPHY } from '../../constants/Theme';
 import { APP_VERSION, APP_BUILD } from '../../constants/Config';
 import TextIcon from '../../components/TextIcon';
@@ -9,6 +11,8 @@ import { mfaEnable, mfaSetup } from '../../api/mfa';
 
 export default function SettingsScreen() {
   const { depositAddress, email, name, biometricEnabled, signOut } = useAccountStore();
+  const insets = useSafeAreaInsets();
+  const tabBarHeight = useBottomTabBarHeight();
   const profileInitial = (name?.trim()?.[0] || email?.trim()?.[0] || 'U').toUpperCase();
   const [mfaVisible, setMfaVisible] = useState(false);
   const [otpAuth, setOtpAuth] = useState<string | null>(null);
@@ -57,12 +61,17 @@ export default function SettingsScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <Text style={TYPOGRAPHY.h2}>Settings</Text>
       </View>
       
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: Math.max(tabBarHeight, insets.bottom) + SPACING.xl },
+        ]}
+      >
         <View style={styles.profileSection}>
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>{profileInitial}</Text>

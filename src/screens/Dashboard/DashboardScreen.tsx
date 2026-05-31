@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Alert, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
 import Animated, {
   useAnimatedStyle,
@@ -76,6 +78,8 @@ function ActionButton({
 export default function DashboardScreen() {
   const navigation = useNavigation<any>();
   const { name, address, email } = useAccountStore();
+  const insets = useSafeAreaInsets();
+  const tabBarHeight = useBottomTabBarHeight();
   const [portfolio, setPortfolio] = useState<PortfolioSummary | null>(null);
   const [supportedAssets, setSupportedAssets] = useState<SupportedAsset[]>([]);
   const [history, setHistory] = useState<number[]>([]);
@@ -175,11 +179,18 @@ export default function DashboardScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.backgroundGlowTop} />
       <View style={styles.backgroundGlowMid} />
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.content,
+          // Keep content clear of the floating tab bar on all device sizes.
+          { paddingBottom: Math.max(tabBarHeight, insets.bottom) + SPACING.xl },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.header}>
           <View style={styles.headerCopy}>
             <Text style={styles.greeting}>Good evening, {name}</Text>

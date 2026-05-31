@@ -3,7 +3,6 @@ import {
   View, 
   Text, 
   StyleSheet, 
-  SafeAreaView, 
   ScrollView, 
   RefreshControl, 
   TouchableOpacity, 
@@ -12,6 +11,8 @@ import {
   Alert
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useWalletStore } from '../../store/walletStore';
 import { COLORS, SPACING, TYPOGRAPHY } from '../../constants/Theme';
 import { fetchPortfolioSummary, fetchPortfolioHistory, fetchSupportedAssets, PortfolioSummary, SupportedAsset } from '../../api/portfolio';
@@ -33,6 +34,8 @@ const formatCurrency = (value: string | null) => {
 export default function PortfolioHomeScreen() {
   const navigation = useNavigation<any>();
   const { address } = useWalletStore();
+  const insets = useSafeAreaInsets();
+  const tabBarHeight = useBottomTabBarHeight();
   
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -98,7 +101,7 @@ export default function PortfolioHomeScreen() {
   const netWorth = formatCurrency(portfolio?.totalValue ?? null);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <StatusBar barStyle="light-content" />
       <View style={styles.header}>
         <Text style={TYPOGRAPHY.h2}>Portfolio</Text>
@@ -108,7 +111,10 @@ export default function PortfolioHomeScreen() {
       </View>
 
       <ScrollView 
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: Math.max(tabBarHeight, insets.bottom) + SPACING.xl },
+        ]}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />}
         showsVerticalScrollIndicator={false}
       >

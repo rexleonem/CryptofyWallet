@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, FlatList, TouchableOpacity, RefreshControl, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import TransactionCard from '../../components/TransactionCard';
 import { COLORS, SPACING, TYPOGRAPHY } from '../../constants/Theme';
 import { useWalletStore } from '../../store/walletStore';
@@ -9,6 +11,8 @@ import { apiClient } from '../../api/client';
 export default function HistoryScreen() {
   const navigation = useNavigation();
   const { address } = useWalletStore();
+  const insets = useSafeAreaInsets();
+  const tabBarHeight = useBottomTabBarHeight();
   const [history, setHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -43,7 +47,7 @@ export default function HistoryScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Text style={styles.backText}>Back</Text>
@@ -59,22 +63,25 @@ export default function HistoryScreen() {
       ) : (
         <FlatList
           data={history}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <TransactionCard 
-            type={item.type}
-            address={item.to || item.from}
-            amount={item.amount}
-            symbol={item.symbol}
-            status={item.status}
-            timestamp={item.timestamp}
-          />
-        )}
-        contentContainerStyle={styles.listContent}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />
-        }
-        ListEmptyComponent={
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <TransactionCard 
+              type={item.type}
+              address={item.to || item.from}
+              amount={item.amount}
+              symbol={item.symbol}
+              status={item.status}
+              timestamp={item.timestamp}
+            />
+          )}
+          contentContainerStyle={[
+            styles.listContent,
+            { paddingBottom: Math.max(tabBarHeight, insets.bottom) + SPACING.l },
+          ]}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />
+          }
+          ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>No transactions found</Text>
           </View>

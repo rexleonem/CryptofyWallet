@@ -1,11 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, FlatList, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAccountStore } from '../../store/walletStore';
 import { COLORS, SPACING, TYPOGRAPHY } from '../../constants/Theme';
 import { apiClient } from '../../api/client';
 import ChatBubble from '../../components/ChatBubble';
 import { CryptofyIcon } from '../../components/icons';
+
+const HEADER_EST_HEIGHT = 64;
 
 export default function ChatScreen() {
   const navigation = useNavigation();
@@ -14,6 +18,8 @@ export default function ChatScreen() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const flatListRef = useRef<FlatList>(null);
+  const insets = useSafeAreaInsets();
+  const tabBarHeight = useBottomTabBarHeight();
 
   const handleSend = async (text: string) => {
     if (!text.trim() || loading) return;
@@ -47,49 +53,55 @@ export default function ChatScreen() {
   }, [messages, loading]);
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backText}>Close</Text>
-        </TouchableOpacity>
-        <View style={styles.headerInfo}>
-          <View style={styles.titleRow}>
-            <View style={styles.aiMark}>
-              <CryptofyIcon name="ai" size={16} color={COLORS.primaryLight} />
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? HEADER_EST_HEIGHT + insets.top : 0}
+    >
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Text style={styles.backText}>Close</Text>
+          </TouchableOpacity>
+          <View style={styles.headerInfo}>
+            <View style={styles.titleRow}>
+              <View style={styles.aiMark}>
+                <CryptofyIcon name="ai" size={16} color={COLORS.primaryLight} />
+              </View>
+              <Text style={styles.headerTitle}>Cryptofy Intelligence</Text>
             </View>
-            <Text style={styles.headerTitle}>Cryptofy Intelligence</Text>
+            <Text style={styles.headerSubtitle}>Portfolio-aware - Real-time</Text>
           </View>
-          <Text style={styles.headerSubtitle}>Portfolio-aware - Real-time</Text>
+          <View style={{ width: 50 }} />
         </View>
-        <View style={{ width: 50 }} />
-      </View>
 
-      <FlatList
-        ref={flatListRef}
-        data={messages}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <ChatBubble 
-            message={item.text} 
-            isUser={item.isUser} 
-            insights={item.insights}
-            actions={item.actions}
-          />
-        )}
-        contentContainerStyle={styles.listContent}
-        ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyTitle}>No AI history yet</Text>
-            <Text style={styles.emptyText}>Ask a question when live intelligence is available for your account.</Text>
-          </View>
-        }
-      />
+        <FlatList
+          ref={flatListRef}
+          data={messages}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <ChatBubble
+              message={item.text}
+              isUser={item.isUser}
+              insights={item.insights}
+              actions={item.actions}
+            />
+          )}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={[
+            styles.listContent,
+            // Ensure content isn't hidden behind the floating tab bar.
+            { paddingBottom: Math.max(tabBarHeight, insets.bottom) + SPACING.l },
+          ]}
+          ListEmptyComponent={
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyTitle}>No AI history yet</Text>
+              <Text style={styles.emptyText}>Ask a question when live intelligence is available for your account.</Text>
+            </View>
+          }
+        />
 
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
-      >
-        <View style={styles.inputContainer}>
+        <View style={[styles.inputContainer, { paddingBottom: insets.bottom + 10 }]}>
           <TextInput
             style={styles.input}
             placeholder="Ask about your portfolio..."
@@ -98,16 +110,16 @@ export default function ChatScreen() {
             onChangeText={setInput}
             multiline
           />
-          <TouchableOpacity 
-            style={[styles.sendButton, !input.trim() && styles.disabledSend]} 
+          <TouchableOpacity
+            style={[styles.sendButton, !input.trim() && styles.disabledSend]}
             onPress={() => handleSend(input)}
             disabled={!input.trim() || loading}
           >
             {loading ? <ActivityIndicator size="small" color="white" /> : <Text style={styles.sendText}>Send</Text>}
           </TouchableOpacity>
         </View>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+      </SafeAreaView>
+    </KeyboardAvoidingView>
   );
 }
 
