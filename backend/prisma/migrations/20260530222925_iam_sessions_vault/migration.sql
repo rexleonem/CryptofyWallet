@@ -27,7 +27,15 @@ CREATE TABLE IF NOT EXISTS "Session" (
 
 CREATE UNIQUE INDEX IF NOT EXISTS "Session_refreshTokenSha_key" ON "Session"("refreshTokenSha");
 
-ALTER TABLE "Session"
-  ADD CONSTRAINT IF NOT EXISTS "Session_userId_fkey"
-  FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_constraint
+    WHERE conname = 'Session_userId_fkey'
+  ) THEN
+    ALTER TABLE "Session"
+      ADD CONSTRAINT "Session_userId_fkey"
+      FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END $$;

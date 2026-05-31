@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import argon2 from 'argon2';
@@ -46,36 +46,51 @@ export class AuthService {
     }
 
     const passwordHash = await argon2.hash(password, { type: argon2.argon2id });
-    const user = await this.prisma.user.create({
-      data: { email, name, passwordHash },
-    });
+    let user: any;
+    try {
+      user = await this.prisma.user.create({
+        data: { email, name, passwordHash },
+      });
+    } catch (e: any) {
+      // Common production misconfig: DB migrations not applied.
+      throw new ServiceUnavailableException('Authentication service unavailable (database not ready)');
+    }
 
     // Create a default custodial wallet record (encrypted at rest via VAULT_MASTER_KEY_B64).
-    const wallet = ethers.Wallet.createRandom();
-    const keyPayload = encryptWithMasterKey(wallet.privateKey, 1);
-    await this.prisma.wallet.create({
-      data: {
-        userId: user.id,
-        address: wallet.address,
-        label: 'Primary Wallet',
-        network: 'ethereum',
-        custodyProvider: 'LOCAL_VAULT',
-        keyVersion: 1,
-        encryptedPrivateKey: JSON.stringify(keyPayload),
-      },
-    });
+    try {
+      const wallet = ethers.Wallet.createRandom();
+      const keyPayload = encryptWithMasterKey(wallet.privateKey, 1);
+      await this.prisma.wallet.create({
+        data: {
+          userId: user.id,
+          address: wallet.address,
+          label: 'Primary Wallet',
+          network: 'ethereum',
+          custodyProvider: 'LOCAL_VAULT',
+          keyVersion: 1,
+          encryptedPrivateKey: JSON.stringify(keyPayload),
+        },
+      });
+    } catch {
+      throw new ServiceUnavailableException('Authentication service unavailable (vault not configured)');
+    }
     const wallets = await this.prisma.wallet.findMany({ where: { userId: user.id } });
 
     const { accessToken, refreshToken, refreshSha } = await this.issueTokens({ id: user.id, email: user.email!, role: user.role }, 'pending');
-    const session = await this.prisma.session.create({
-      data: {
-        userId: user.id,
-        deviceId: input.deviceId,
-        refreshTokenSha: refreshSha,
-        ip: input.ip,
-        userAgent: input.userAgent,
-      },
-    });
+    let session: any;
+    try {
+      session = await this.prisma.session.create({
+        data: {
+          userId: user.id,
+          deviceId: input.deviceId,
+          refreshTokenSha: refreshSha,
+          ip: input.ip,
+          userAgent: input.userAgent,
+        },
+      });
+    } catch {
+      throw new ServiceUnavailableException('Authentication service unavailable (sessions not ready)');
+    }
     const accessTokenFinal = await this.jwtService.signAsync({
       sub: user.id,
       email: user.email,
@@ -108,15 +123,20 @@ export class AuthService {
     }
 
     const { accessToken, refreshToken, refreshSha } = await this.issueTokens({ id: user.id, email: user.email!, role: user.role }, 'pending');
-    const session = await this.prisma.session.create({
-      data: {
-        userId: user.id,
-        deviceId: input.deviceId,
-        refreshTokenSha: refreshSha,
-        ip: input.ip,
-        userAgent: input.userAgent,
-      },
-    });
+    let session: any;
+    try {
+      session = await this.prisma.session.create({
+        data: {
+          userId: user.id,
+          deviceId: input.deviceId,
+          refreshTokenSha: refreshSha,
+          ip: input.ip,
+          userAgent: input.userAgent,
+        },
+      });
+    } catch {
+      throw new ServiceUnavailableException('Authentication service unavailable (sessions not ready)');
+    }
 
     const accessTokenFinal = await this.jwtService.signAsync({
       sub: user.id,
