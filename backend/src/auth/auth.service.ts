@@ -1,7 +1,7 @@
 import { BadRequestException, ForbiddenException, Injectable, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import argon2 from 'argon2';
+import * as argon2 from 'argon2';
 import { authenticator } from 'otplib';
 import { ethers } from 'ethers';
 import { PrismaService } from '../prisma/prisma.service';
@@ -71,8 +71,16 @@ export class AuthService {
           encryptedPrivateKey: JSON.stringify(keyPayload),
         },
       });
-    } catch {
-      throw new ServiceUnavailableException('Authentication service unavailable (vault not configured)');
+    } catch (e: any) {
+      // Distinguish vault misconfig from DB/model issues (migrations, constraints, etc).
+      // We log server-side for diagnostics but return a safe message to clients.
+      // eslint-disable-next-line no-console
+      console.error('wallet_provisioning_failed', e?.message || e, e?.code || '');
+      const msg = String(e?.message || '');
+      if (msg.includes('VAULT_MASTER_KEY_B64')) {
+        throw new ServiceUnavailableException('Authentication service unavailable (vault not configured)');
+      }
+      throw new ServiceUnavailableException('Authentication service unavailable (wallet provisioning failed)');
     }
     const wallets = await this.prisma.wallet.findMany({ where: { userId: user.id } });
 

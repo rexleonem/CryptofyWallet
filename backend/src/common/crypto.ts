@@ -1,4 +1,4 @@
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 
 function requireBase64Key(envName: string, expectedBytes: number) {
   const raw = process.env[envName];
@@ -65,4 +65,3 @@ export function randomTokenBase64url(bytes = 32): string {
     .replace(/\//g, '_')
     .replace(/=+$/g, '');
 }
-
