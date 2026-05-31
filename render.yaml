@@ -12,6 +12,8 @@ services:
         sync: false # Optional: Set this if using Upstash or similar
       - key: JWT_SECRET
         generateValue: true
+      - key: VAULT_MASTER_KEY_B64
+        sync: false # MUST be base64 of 32 random bytes (do not rotate casually)
       - key: PORT
         value: 3000
 
