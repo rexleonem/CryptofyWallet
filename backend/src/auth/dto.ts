@@ -14,10 +14,13 @@ export class SignUpDto {
   @MaxLength(80)
   name?: string;
 
+  // Optional for backward compatibility with older mobile builds.
+  // New builds should always send it.
+  @IsOptional()
   @IsString()
   @MinLength(6)
   @MaxLength(128)
-  deviceId!: string;
+  deviceId?: string;
 }
 
 export class LoginDto {
@@ -29,10 +32,11 @@ export class LoginDto {
   @MaxLength(128)
   password!: string;
 
+  @IsOptional()
   @IsString()
   @MinLength(6)
   @MaxLength(128)
-  deviceId!: string;
+  deviceId?: string;
 }
 
 export class RefreshDto {
@@ -40,17 +44,19 @@ export class RefreshDto {
   @MinLength(20)
   refreshToken!: string;
 
+  @IsOptional()
   @IsString()
   @MinLength(6)
   @MaxLength(128)
-  deviceId!: string;
+  deviceId?: string;
 }
 
 export class LogoutDto {
+  @IsOptional()
   @IsString()
   @MinLength(6)
   @MaxLength(128)
-  deviceId!: string;
+  deviceId?: string;
 }
 
 export class MfaSetupDto {
@@ -71,4 +77,3 @@ export class MfaVerifyDto {
   @MaxLength(10)
   code!: string;
 }
-
