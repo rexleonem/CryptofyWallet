@@ -20,6 +20,12 @@ import ReceiveScreen from '../screens/Transactions/ReceiveScreen';
 import HistoryScreen from '../screens/Transactions/HistoryScreen';
 import TokenDetailScreen from '../screens/Portfolio/TokenDetailScreen';
 import InsightsDetailScreen from '../screens/Insights/InsightsDetailScreen';
+import BuyScreen from '../screens/Trade/BuyScreen';
+import SellScreen from '../screens/Trade/SellScreen';
+import SwapScreen from '../screens/Trade/SwapScreen';
+import P2PMarketplace from '../screens/P2P/P2PMarketplace';
+import UtilitiesScreen from '../screens/Utilities/UtilitiesScreen';
+import MoreScreen from '../screens/More/MoreScreen';
 
 const Stack = createNativeStackNavigator();
 const queryClient = new QueryClient();
@@ -91,6 +97,12 @@ export default function App() {
                   <Stack.Screen name="History" component={HistoryScreen} />
                   <Stack.Screen name="TokenDetail" component={TokenDetailScreen} />
                   <Stack.Screen name="InsightsDetail" component={InsightsDetailScreen} />
+                  <Stack.Screen name="Buy" component={BuyScreen} />
+                  <Stack.Screen name="Sell" component={SellScreen} />
+                  <Stack.Screen name="Swap" component={SwapScreen} />
+                  <Stack.Screen name="P2P" component={P2PMarketplace} />
+                  <Stack.Screen name="Utilities" component={UtilitiesScreen} />
+                  <Stack.Screen name="More" component={MoreScreen} />
                 </>
               ) : (
                 <Stack.Screen name="Auth" component={AuthScreen} />

@@ -1,6 +1,7 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Clipboard from '@react-native-clipboard/clipboard';
 import { useAccountStore } from '../../store/walletStore';
 import { COLORS, SPACING, TYPOGRAPHY } from '../../constants/Theme';
@@ -8,6 +9,7 @@ import { COLORS, SPACING, TYPOGRAPHY } from '../../constants/Theme';
 export default function ReceiveScreen() {
   const navigation = useNavigation();
   const { depositAddress } = useAccountStore();
+  const insets = useSafeAreaInsets();
 
   const copyAddress = () => {
     if (!depositAddress) {
@@ -19,8 +21,8 @@ export default function ReceiveScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Text style={styles.backText}>Close</Text>
         </TouchableOpacity>

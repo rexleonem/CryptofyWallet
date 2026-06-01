@@ -101,6 +101,18 @@ export class PortfolioService {
       }
 
       let total = 0;
+      // Fiat primitives (best-effort). USD is valued 1:1; other fiats keep amount but omit USD value until FX is added.
+      for (const t of allTokens) {
+        const sym = String(t.symbol || '').toUpperCase();
+        if (sym === 'USD') {
+          const amt = Number(t.amount);
+          if (Number.isFinite(amt)) {
+            t.price = '1';
+            t.value = String(amt);
+            total += amt;
+          }
+        }
+      }
       for (const t of allTokens) {
         const id = t.coingeckoId;
         const px = id ? prices?.[id]?.usd : undefined;

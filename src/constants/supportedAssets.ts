@@ -13,4 +13,8 @@ export const SUPPORTED_ASSETS: SupportedAsset[] = [
   { rank: 10, symbol: 'DOGE', name: 'Dogecoin', coingeckoId: 'dogecoin', category: 'market' },
   { rank: 11, symbol: 'CFYC', name: 'Cryptofy Coin', coingeckoId: null, category: 'cryptofy' },
   { rank: 12, symbol: '$CHERO', name: 'Cherokee Dollar', coingeckoId: null, category: 'cryptofy' },
+  { rank: 13, symbol: 'USD', name: 'US Dollar', coingeckoId: null, category: 'fiat' },
+  { rank: 14, symbol: 'EUR', name: 'Euro', coingeckoId: null, category: 'fiat' },
+  { rank: 15, symbol: 'GBP', name: 'British Pound', coingeckoId: null, category: 'fiat' },
+  { rank: 16, symbol: 'NGN', name: 'Nigerian Naira', coingeckoId: null, category: 'fiat' },
 ];

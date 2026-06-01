@@ -101,7 +101,13 @@ export default function ChatScreen() {
           }
         />
 
-        <View style={[styles.inputContainer, { paddingBottom: insets.bottom + 10 }]}>
+        <View
+          style={[
+            styles.inputContainer,
+            // Keep the composer above the floating tab bar on all devices.
+            { paddingBottom: insets.bottom + 10, marginBottom: tabBarHeight + 8 },
+          ]}
+        >
           <TextInput
             style={styles.input}
             placeholder="Ask about your portfolio..."

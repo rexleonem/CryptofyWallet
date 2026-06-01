@@ -24,12 +24,16 @@ export type CryptofyIconName =
   | 'profile'
   | 'refresh'
   | 'search'
+  | 'sell'
   | 'send'
   | 'shield'
   | 'spark'
   | 'swap'
   | 'transfer'
+  | 'utilities'
   | 'user'
+  | 'more'
+  | 'p2p'
   | 'wallet';
 
 interface CryptofyIconProps {
@@ -105,6 +109,13 @@ export default function CryptofyIcon({
             <Path d="M12 8v8M8 12h8" {...common} stroke={stroke} strokeWidth={strokeWidth} />
           </>
         );
+      case 'sell':
+        return (
+          <>
+            <Circle cx="12" cy="12" r="8" {...common} stroke={stroke} strokeWidth={strokeWidth} />
+            <Path d="M8 12h8" {...common} stroke={stroke} strokeWidth={strokeWidth} />
+          </>
+        );
       case 'ai':
         return (
           <>
@@ -118,6 +129,15 @@ export default function CryptofyIcon({
           <>
             <Path d="M7 7h10l-3-3M17 17H7l3 3" {...common} stroke={stroke} strokeWidth={strokeWidth} />
             <Path d="M17 7l-3 3M7 17l3-3" {...common} stroke={stroke} strokeWidth={strokeWidth} />
+          </>
+        );
+      case 'p2p':
+        return (
+          <>
+            <Circle cx="9" cy="10" r="2.4" {...common} stroke={stroke} strokeWidth={strokeWidth} />
+            <Circle cx="15.5" cy="11.5" r="2.2" {...common} stroke={stroke} strokeWidth={strokeWidth} />
+            <Path d="M4.8 18.5c.7-3 2.3-4.6 4.9-4.6s4.2 1.6 4.9 4.6" {...common} stroke={stroke} strokeWidth={strokeWidth} />
+            <Path d="M12.6 18.5c.4-2.3 1.6-3.6 3.6-3.6 1.7 0 2.8.8 3.4 2.4" {...common} stroke={stroke} strokeWidth={strokeWidth} />
           </>
         );
       case 'profile':
@@ -172,6 +192,23 @@ export default function CryptofyIcon({
         );
       case 'payment':
         return <Path d="M6 9h12M7 14h4M5 5.5h14A2.5 2.5 0 0 1 21.5 8v8A2.5 2.5 0 0 1 19 18.5H5A2.5 2.5 0 0 1 2.5 16V8A2.5 2.5 0 0 1 5 5.5z" {...common} stroke={stroke} strokeWidth={strokeWidth} />;
+      case 'utilities':
+        return (
+          <>
+            <Rect x="5" y="5" width="6.5" height="6.5" rx="2" {...common} stroke={stroke} strokeWidth={strokeWidth} />
+            <Rect x="12.5" y="5" width="6.5" height="6.5" rx="2" {...common} stroke={stroke} strokeWidth={strokeWidth} />
+            <Rect x="5" y="12.5" width="6.5" height="6.5" rx="2" {...common} stroke={stroke} strokeWidth={strokeWidth} />
+            <Rect x="12.5" y="12.5" width="6.5" height="6.5" rx="2" {...common} stroke={stroke} strokeWidth={strokeWidth} />
+          </>
+        );
+      case 'more':
+        return (
+          <>
+            <Circle cx="7" cy="12" r="1.2" fill={stroke} />
+            <Circle cx="12" cy="12" r="1.2" fill={stroke} />
+            <Circle cx="17" cy="12" r="1.2" fill={stroke} />
+          </>
+        );
       case 'device':
         return (
           <>

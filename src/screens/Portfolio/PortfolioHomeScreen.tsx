@@ -50,6 +50,7 @@ export default function PortfolioHomeScreen() {
   const [history, setHistory] = useState<number[]>([]);
   const [supportedAssets, setSupportedAssets] = useState<SupportedAsset[]>([]);
   const [timeFilter, setTimeFilter] = useState('7D');
+  const [walletSection, setWalletSection] = useState<'crypto' | 'fiat'>('crypto');
 
   const fetchData = async () => {
     if (!address) {
@@ -111,6 +112,7 @@ export default function PortfolioHomeScreen() {
         symbol: selectedAsset.symbol,
         name: selectedAsset.name,
         coingeckoId: selectedAsset.coingeckoId,
+        chain: selectedAsset.category === 'fiat' ? 'FIAT' : 'CUSTODY',
         amount,
       });
       setAddVisible(false);
@@ -136,13 +138,15 @@ export default function PortfolioHomeScreen() {
   const change = portfolio?.change24h ?? null;
   const isPositive = typeof change === 'number' && change >= 0;
   const tokens = portfolio?.tokens || [];
+  const cryptoTokens = tokens.filter((t: any) => String(t?.chain || '').toUpperCase() !== 'FIAT' && !['USD', 'EUR', 'GBP', 'NGN'].includes(String(t?.symbol || '').toUpperCase()));
+  const fiatTokens = tokens.filter((t: any) => String(t?.chain || '').toUpperCase() === 'FIAT' || ['USD', 'EUR', 'GBP', 'NGN'].includes(String(t?.symbol || '').toUpperCase()));
   const netWorth = formatCurrency(portfolio?.totalValue ?? null);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <StatusBar barStyle="light-content" />
       <View style={styles.header}>
-        <Text style={TYPOGRAPHY.h2}>Portfolio</Text>
+        <Text style={TYPOGRAPHY.h2}>Wallets</Text>
         <TouchableOpacity style={styles.filterButton} onPress={() => setAddVisible(true)}>
           <TextIcon label="+" size={18} color={COLORS.textPrimary} />
         </TouchableOpacity>
@@ -209,11 +213,28 @@ export default function PortfolioHomeScreen() {
 
         <View style={styles.sectionHeaderRow}>
           <TextIcon label="%" size={20} color={COLORS.primary} />
-          <Text style={styles.sectionTitle}>Asset Allocation</Text>
+          <Text style={styles.sectionTitle}>Holdings</Text>
         </View>
 
         <View style={styles.assetsList}>
-          {tokens.map((token: any, i: number) => (
+          <View style={styles.segmentWrap}>
+            <TouchableOpacity
+              style={[styles.segment, walletSection === 'crypto' && styles.segmentActive]}
+              onPress={() => setWalletSection('crypto')}
+              activeOpacity={0.9}
+            >
+              <Text style={[styles.segmentText, walletSection === 'crypto' && styles.segmentTextActive]}>Crypto</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.segment, walletSection === 'fiat' && styles.segmentActive]}
+              onPress={() => setWalletSection('fiat')}
+              activeOpacity={0.9}
+            >
+              <Text style={[styles.segmentText, walletSection === 'fiat' && styles.segmentTextActive]}>Fiat</Text>
+            </TouchableOpacity>
+          </View>
+
+          {(walletSection === 'crypto' ? cryptoTokens : fiatTokens).map((token: any, i: number) => (
             <TokenRow 
               key={`${token.symbol}-${i}`}
               symbol={token.symbol}
@@ -226,10 +247,14 @@ export default function PortfolioHomeScreen() {
           ))}
         </View>
 
-        {tokens.length === 0 && (
+        {(walletSection === 'crypto' ? cryptoTokens : fiatTokens).length === 0 && (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyTitle}>No assets yet</Text>
-            <Text style={styles.emptySubtitle}>Your portfolio will appear here once you receive crypto.</Text>
+            <Text style={styles.emptyTitle}>{walletSection === 'crypto' ? 'No crypto yet' : 'No fiat balances yet'}</Text>
+            <Text style={styles.emptySubtitle}>
+              {walletSection === 'crypto'
+                ? 'Your crypto balances will appear here once you add an asset or receive funds.'
+                : 'Your fiat balances will appear here once you add a currency.'}
+            </Text>
           </View>
         )}
 
@@ -274,7 +299,9 @@ export default function PortfolioHomeScreen() {
                         <Text style={styles.assetOptionName} numberOfLines={1}>{asset.name}</Text>
                       </View>
                     </View>
-                    <Text style={styles.assetOptionCategory}>{asset.category === 'cryptofy' ? 'Cryptofy' : 'Market'}</Text>
+                    <Text style={styles.assetOptionCategory}>
+                      {asset.category === 'fiat' ? 'Fiat' : asset.category === 'cryptofy' ? 'Cryptofy' : 'Market'}
+                    </Text>
                   </TouchableOpacity>
                 );
               })}
@@ -624,5 +651,35 @@ const styles = StyleSheet.create({
     color: COLORS.textMuted,
     fontSize: 13,
     fontWeight: '800',
+  },
+  segmentWrap: {
+    flexDirection: 'row',
+    gap: 10,
+    padding: 4,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.07)',
+    marginBottom: SPACING.m,
+  },
+  segment: {
+    flex: 1,
+    height: 36,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  segmentActive: {
+    backgroundColor: 'rgba(10,132,255,0.16)',
+    borderWidth: 1,
+    borderColor: 'rgba(165,216,255,0.22)',
+  },
+  segmentText: {
+    color: COLORS.textMuted,
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  segmentTextActive: {
+    color: COLORS.primaryLight,
   },
 });

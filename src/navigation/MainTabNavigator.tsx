@@ -50,7 +50,7 @@ export default function MainTabNavigator() {
       <TabScreen
         name="Portfolio"
         component={PortfolioHomeScreen}
-        options={{ tabBarIcon: tabIcon('analytics') }}
+        options={{ tabBarLabel: 'Wallets', tabBarIcon: tabIcon('wallet') }}
       />
       <TabScreen
         name="AI"

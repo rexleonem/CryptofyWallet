@@ -242,8 +242,12 @@ export default function DashboardScreen() {
         <View style={styles.actionRow}>
           <ActionButton icon="send" label="Send" onPress={() => navigation.navigate('Send')} />
           <ActionButton icon="arrowDown" label="Receive" onPress={() => navigation.navigate('Receive')} />
-          <ActionButton icon="buy" label="Buy" onPress={() => Alert.alert('Buy unavailable', 'Buy will appear when live payment rails are enabled.')} />
-          <ActionButton icon="swap" label="Swap" onPress={() => Alert.alert('Swap unavailable', 'Swap will appear when live routing is enabled.')} />
+          <ActionButton icon="buy" label="Buy" onPress={() => navigation.navigate('Buy')} />
+          <ActionButton icon="sell" label="Sell" onPress={() => navigation.navigate('Sell')} />
+          <ActionButton icon="swap" label="Swap" onPress={() => navigation.navigate('Swap')} />
+          <ActionButton icon="p2p" label="P2P" onPress={() => navigation.navigate('P2P')} />
+          <ActionButton icon="utilities" label="Utilities" onPress={() => navigation.navigate('Utilities')} />
+          <ActionButton icon="more" label="More" onPress={() => navigation.navigate('More')} />
         </View>
 
         <View style={styles.chartCard}>
@@ -509,7 +513,9 @@ const styles = StyleSheet.create({
   },
   actionRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'space-between',
+    rowGap: SPACING.m,
     marginBottom: SPACING.l,
   },
   actionPressable: {
