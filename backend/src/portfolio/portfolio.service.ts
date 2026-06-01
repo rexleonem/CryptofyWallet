@@ -4,6 +4,7 @@ import { ethers } from 'ethers';
 import { PORTFOLIO_CACHE_TTL, SUPPORTED_ASSETS, SUPPORTED_PORTFOLIO_CHAINS } from '../common/constants';
 import { PrismaService } from '../prisma/prisma.service';
 import axios from 'axios';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class PortfolioService {
@@ -11,6 +12,26 @@ export class PortfolioService {
   private CACHE_TTL = PORTFOLIO_CACHE_TTL;
 
   constructor(private blockchainService: BlockchainService, private prisma: PrismaService) {}
+
+  private nativeCoinGeckoId(symbol: string) {
+    switch (symbol.toUpperCase()) {
+      case 'ETH':
+        return 'ethereum';
+      case 'BNB':
+        return 'binancecoin';
+      case 'MATIC':
+        return 'matic-network';
+      default:
+        return null;
+    }
+  }
+
+  private deterministicPrice(symbol: string, min: number, max: number) {
+    const h = crypto.createHash('sha256').update(symbol, 'utf8').digest();
+    const n = h.readUInt32BE(0);
+    const t = n / 0xffffffff;
+    return min + (max - min) * t;
+  }
 
   async assertWalletOwnership(userId: string, address: string) {
     const wallet = await this.prisma.wallet.findFirst({ where: { userId, address } });
@@ -39,14 +60,16 @@ export class PortfolioService {
         const balanceEth = parseFloat(ethers.formatEther(balanceWei));
         
         if (balanceEth > 0) {
+          const symbol = chain === 'POLYGON' ? 'MATIC' : chain === 'BSC' ? 'BNB' : 'ETH';
           allTokens.push({
-            symbol: chain === 'POLYGON' ? 'MATIC' : chain === 'BSC' ? 'BNB' : 'ETH',
+            symbol,
             name: chain === 'POLYGON' ? 'Polygon' : chain === 'BSC' ? 'Binance' : 'Ethereum',
             amount: balanceEth.toFixed(4),
             value: null,
             change24h: null,
             price: null,
-            chain
+            chain,
+            coingeckoId: this.nativeCoinGeckoId(symbol),
           });
         }
       }
@@ -101,15 +124,34 @@ export class PortfolioService {
       }
 
       let total = 0;
-      // Fiat primitives (best-effort). USD is valued 1:1; other fiats keep amount but omit USD value until FX is added.
+      // Fixed-price primitives (best-effort).
       for (const t of allTokens) {
         const sym = String(t.symbol || '').toUpperCase();
-        if (sym === 'USD') {
+        if (sym === 'USD' || sym === '$CHUSD') {
           const amt = Number(t.amount);
           if (Number.isFinite(amt)) {
             t.price = '1';
             t.value = String(amt);
+            t.change24h = 0;
             total += amt;
+          }
+        }
+      }
+
+      // Dev-only mock pricing for non-market assets (never enable in production).
+      if (String(process.env.MOCK_TOKEN_PRICES || '').toLowerCase() === 'true') {
+        for (const t of allTokens) {
+          const sym = String(t.symbol || '').toUpperCase();
+          if (sym === 'CFYC' || sym === '$CHERO') {
+            const px = this.deterministicPrice(sym, 0.05, 2.5);
+            t.price = String(px);
+            t.change24h = this.deterministicPrice(sym + '_ch', -5, 8);
+            const amt = Number(t.amount);
+            if (Number.isFinite(amt)) {
+              const v = amt * px;
+              t.value = String(v);
+              total += v;
+            }
           }
         }
       }

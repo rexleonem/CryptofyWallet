@@ -43,6 +43,7 @@ export default function PortfolioHomeScreen() {
   const [addVisible, setAddVisible] = useState(false);
   const [selectedAsset, setSelectedAsset] = useState<SupportedAsset | null>(null);
   const [assetAmount, setAssetAmount] = useState('');
+  const [assetQuery, setAssetQuery] = useState('');
   
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -118,6 +119,7 @@ export default function PortfolioHomeScreen() {
       setAddVisible(false);
       setSelectedAsset(null);
       setAssetAmount('');
+      setAssetQuery('');
       onRefresh();
     } catch (e: any) {
       Alert.alert('Unable to add asset', e?.response?.data?.message || 'Please try again.');
@@ -282,8 +284,26 @@ export default function PortfolioHomeScreen() {
             <Text style={styles.modalTitle}>Add Asset</Text>
             <Text style={styles.modalSubtitle}>Choose an asset and enter the amount you own.</Text>
 
+            <View style={styles.modalSearch}>
+              <TextInput
+                value={assetQuery}
+                onChangeText={setAssetQuery}
+                placeholder="Search (e.g. BTC, Ethereum, USD)"
+                placeholderTextColor={COLORS.textMuted}
+                style={styles.modalSearchInput}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </View>
+
             <ScrollView style={styles.assetPicker} contentContainerStyle={styles.assetPickerContent} showsVerticalScrollIndicator={false}>
-              {supportedAssets.map((asset) => {
+              {supportedAssets
+                .filter((asset) => {
+                  const q = assetQuery.trim().toLowerCase();
+                  if (!q) return true;
+                  return asset.symbol.toLowerCase().includes(q) || asset.name.toLowerCase().includes(q);
+                })
+                .map((asset) => {
                 const active = selectedAsset?.symbol === asset.symbol;
                 return (
                   <TouchableOpacity
@@ -554,6 +574,21 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 17,
     marginBottom: 12,
+  },
+  modalSearch: {
+    borderRadius: 14,
+    backgroundColor: 'rgba(5,8,22,0.46)',
+    borderWidth: 1,
+    borderColor: 'rgba(182,194,217,0.16)',
+    paddingHorizontal: 12,
+    height: 48,
+    justifyContent: 'center',
+    marginBottom: 10,
+  },
+  modalSearchInput: {
+    color: COLORS.textPrimary,
+    fontSize: 14,
+    fontWeight: '700',
   },
   assetPicker: {
     marginBottom: 12,
