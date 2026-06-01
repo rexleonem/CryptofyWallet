@@ -8,8 +8,10 @@ import { APP_VERSION, APP_BUILD } from '../../constants/Config';
 import TextIcon from '../../components/TextIcon';
 import { clearTokens } from '../../api/tokenStore';
 import { mfaEnable, mfaSetup } from '../../api/mfa';
+import { useNavigation } from '@react-navigation/native';
 
 export default function SettingsScreen() {
+  const navigation = useNavigation<any>();
   const { depositAddress, email, name, biometricEnabled, signOut } = useAccountStore();
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
@@ -97,6 +99,7 @@ export default function SettingsScreen() {
           <SettingItem icon="C" title="Withdrawals" onPress={() => {}} />
           <SettingItem icon="?" title="Help Center" onPress={() => {}} />
           <SettingItem icon="*" title="About Cryptofy" onPress={() => {}} />
+          <SettingItem icon="P" title="Privacy Policy" onPress={() => navigation.navigate('PrivacyPolicy')} />
         </View>
 
         <View style={styles.section}>

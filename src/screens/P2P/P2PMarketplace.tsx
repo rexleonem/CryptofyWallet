@@ -6,12 +6,14 @@ import {
   TouchableOpacity, 
   StyleSheet, 
   ActivityIndicator,
-  SafeAreaView,
   StatusBar,
   TextInput,
-  RefreshControl
+  RefreshControl,
+  Alert
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, SPACING, TYPOGRAPHY } from '../../constants/Theme';
 import { fetchP2POffers, P2POffer } from '../../api/p2p';
 import TextIcon from '../../components/TextIcon';
@@ -22,6 +24,8 @@ const P2PMarketplace = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<'BUY' | 'SELL'>('BUY');
   const navigation = useNavigation<any>();
+  const insets = useSafeAreaInsets();
+  const tabBarHeight = useBottomTabBarHeight();
 
   useEffect(() => {
     loadOffers();
@@ -56,7 +60,7 @@ const P2PMarketplace = () => {
     return (
       <TouchableOpacity 
         style={styles.offerCard}
-        onPress={() => navigation.navigate('TradeDetails', { offer: item })}
+        onPress={() => Alert.alert('Trade details', 'Trade details will appear here once the flow is connected.')}
       >
         <View style={styles.offerHeader}>
           <View style={styles.userInfo}>
@@ -112,9 +116,9 @@ const P2PMarketplace = () => {
 
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <StatusBar barStyle="light-content" />
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
         <Text style={TYPOGRAPHY.h2}>P2P Market</Text>
         <TouchableOpacity style={styles.historyBtn}>
           <Text style={styles.historyBtnText}>My Trades</Text>
@@ -159,7 +163,10 @@ const P2PMarketplace = () => {
           data={Array.isArray(offers) ? offers.filter(o => o?.type === filter) : []}
           renderItem={renderOffer}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[
+            styles.listContent,
+            { paddingBottom: Math.max(tabBarHeight, insets.bottom) + SPACING.xl },
+          ]}
           showsVerticalScrollIndicator={false}
           onRefresh={loadOffers}
           refreshing={refreshing}
@@ -338,6 +345,8 @@ const styles = StyleSheet.create({
   priceSection: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    gap: SPACING.m,
+    flexWrap: 'wrap',
     marginBottom: SPACING.m,
     paddingVertical: SPACING.m,
     borderTopWidth: 1,
@@ -354,6 +363,7 @@ const styles = StyleSheet.create({
   },
   limitInfo: {
     alignItems: 'flex-end',
+    minWidth: 120,
   },
   limitLabel: {
     ...TYPOGRAPHY.label,
@@ -368,10 +378,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    gap: SPACING.m,
   },
   paymentMethods: {
     flexDirection: 'row',
-    gap: 4,
+    gap: 6,
+    flex: 1,
+    flexWrap: 'wrap',
   },
   methodBadge: {
     flexDirection: 'row',

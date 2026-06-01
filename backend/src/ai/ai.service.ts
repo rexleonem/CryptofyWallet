@@ -14,7 +14,7 @@ export class AiService {
     const portfolio = await this.portfolioService.getSummary(address);
     
     const aiInput = {
-      totalValue: portfolio.totalValue,
+      totalValue: Number(portfolio.totalValue) || 0,
       tokens: portfolio.tokens.map(t => ({
         symbol: t.symbol,
         value: t.value
@@ -22,12 +22,12 @@ export class AiService {
     };
 
     try {
-      const isProd = this.configService.get<string>('NODE_ENV') === 'production';
-      const aiUrl = isProd 
-        ? this.configService.get<string>('AI_ENGINE_URL') 
-        : (this.configService.get<string>('DEV_AI_ENGINE_URL') || 'http://localhost:8000');
+      const aiUrl =
+        this.configService.get<string>('AI_ENGINE_URL') ||
+        this.configService.get<string>('DEV_AI_ENGINE_URL') ||
+        'http://localhost:8000';
         
-      const response = await axios.post(`${aiUrl}/api/analyze/portfolio`, aiInput);
+      const response = await axios.post(`${aiUrl}/api/analyze/portfolio`, aiInput, { timeout: 12_000 });
       return response.data;
     } catch (error) {
       console.error('AI Insights Error:', error.message);
@@ -40,8 +40,8 @@ export class AiService {
     const insights = await this.getPortfolioInsights(address);
 
     const context = {
-      totalValue: portfolio.totalValue,
-      change24h: portfolio.change24h,
+      totalValue: Number(portfolio.totalValue) || 0,
+      change24h: typeof portfolio.change24h === 'number' && Number.isFinite(portfolio.change24h) ? portfolio.change24h : 0,
       riskLevel: insights.riskLevel ?? null,
       riskScore: insights.riskScore ?? null,
       topAsset: portfolio.tokens[0]?.symbol ?? null,
@@ -53,15 +53,15 @@ export class AiService {
     };
 
     try {
-      const isProd = this.configService.get<string>('NODE_ENV') === 'production';
-      const aiUrl = isProd 
-        ? this.configService.get<string>('AI_ENGINE_URL') 
-        : (this.configService.get<string>('DEV_AI_ENGINE_URL') || 'http://localhost:8000');
+      const aiUrl =
+        this.configService.get<string>('AI_ENGINE_URL') ||
+        this.configService.get<string>('DEV_AI_ENGINE_URL') ||
+        'http://localhost:8000';
 
       const response = await axios.post(`${aiUrl}/api/chat/respond`, {
         message,
         context
-      });
+      }, { timeout: 18_000 });
       return response.data;
     } catch (error) {
       console.error('AI Chat Error:', error.message);

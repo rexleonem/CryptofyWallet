@@ -20,6 +20,7 @@ import ReceiveScreen from '../screens/Transactions/ReceiveScreen';
 import HistoryScreen from '../screens/Transactions/HistoryScreen';
 import TokenDetailScreen from '../screens/Portfolio/TokenDetailScreen';
 import InsightsDetailScreen from '../screens/Insights/InsightsDetailScreen';
+import PrivacyPolicyScreen from '../screens/Legal/PrivacyPolicyScreen';
 import BuyScreen from '../screens/Trade/BuyScreen';
 import SellScreen from '../screens/Trade/SellScreen';
 import SwapScreen from '../screens/Trade/SwapScreen';
@@ -103,6 +104,7 @@ export default function App() {
                   <Stack.Screen name="P2P" component={P2PMarketplace} />
                   <Stack.Screen name="Utilities" component={UtilitiesScreen} />
                   <Stack.Screen name="More" component={MoreScreen} />
+                  <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
                 </>
               ) : (
                 <Stack.Screen name="Auth" component={AuthScreen} />
