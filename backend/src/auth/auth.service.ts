@@ -32,6 +32,38 @@ export class AuthService {
     return { accessToken: access, refreshToken, refreshSha };
   }
 
+  private async ensurePrimaryWallet(userId: string) {
+    const existing = await this.prisma.wallet.findMany({ where: { userId } });
+    if (existing.length > 0) return existing;
+
+    try {
+      const wallet = ethers.Wallet.createRandom();
+      const keyPayload = encryptWithMasterKey(wallet.privateKey, 1);
+      await this.prisma.wallet.create({
+        data: {
+          userId,
+          address: wallet.address,
+          label: 'Primary Wallet',
+          network: 'ethereum',
+          custodyProvider: 'LOCAL_VAULT',
+          keyVersion: 1,
+          encryptedPrivateKey: JSON.stringify(keyPayload),
+        },
+      });
+      await this.prisma.portfolio.create({
+        data: {
+          name: 'Main Portfolio',
+          walletId: wallet.address,
+          assets: [],
+        },
+      });
+    } catch {
+      throw new ServiceUnavailableException('Authentication service unavailable (wallet provisioning failed)');
+    }
+
+    return this.prisma.wallet.findMany({ where: { userId } });
+  }
+
   async signUp(input: { email: string; password: string; name?: string; deviceId: string; ip?: string; userAgent?: string }) {
     const email = this.normalizeEmail(input.email);
     const password = input.password || '';
@@ -138,6 +170,8 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials.');
     }
 
+    const wallets = user.wallets?.length ? user.wallets : await this.ensurePrimaryWallet(user.id);
+
     const { accessToken, refreshToken, refreshSha } = await this.issueTokens({ id: user.id, email: user.email!, role: user.role }, 'pending');
     let session: any;
     try {
@@ -162,7 +196,7 @@ export class AuthService {
     });
 
     return {
-      user: { id: user.id, email: user.email, name: user.name, role: user.role, mfaEnabled: user.mfaEnabled, wallets: user.wallets },
+      user: { id: user.id, email: user.email, name: user.name, role: user.role, mfaEnabled: user.mfaEnabled, wallets },
       accessToken: accessTokenFinal,
       refreshToken,
     };
@@ -202,7 +236,13 @@ export class AuthService {
   }
 
   async getUser(id: string) {
-    return this.prisma.user.findUnique({ where: { id }, include: { wallets: true } });
+    const user = await this.prisma.user.findUnique({ where: { id }, include: { wallets: true } });
+    if (!user) return null;
+    if (!user.wallets || user.wallets.length === 0) {
+      const wallets = await this.ensurePrimaryWallet(user.id);
+      return { ...user, wallets };
+    }
+    return user;
   }
 
   async mfaSetup(userId: string) {
