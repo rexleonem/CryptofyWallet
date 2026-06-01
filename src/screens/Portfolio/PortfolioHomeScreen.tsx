@@ -13,6 +13,7 @@ import {
   TextInput
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useRoute } from '@react-navigation/native';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useWalletStore } from '../../store/walletStore';
@@ -36,6 +37,7 @@ const formatCurrency = (value: string | null) => {
 
 export default function PortfolioHomeScreen() {
   const navigation = useNavigation<any>();
+  const route = useRoute<any>();
   const { address } = useWalletStore();
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
@@ -87,6 +89,21 @@ export default function PortfolioHomeScreen() {
   useEffect(() => {
     fetchData();
   }, [address]);
+
+  useEffect(() => {
+    // Allow AI (and other flows) to deep-link into the add-asset modal.
+    if (route?.params?.openAddAsset) {
+      setAddVisible(true);
+      const sym = String(route?.params?.symbol || '').trim();
+      if (sym) {
+        setAssetQuery(sym);
+        const match = supportedAssets.find((a) => a.symbol.toLowerCase() === sym.toLowerCase());
+        if (match) setSelectedAsset(match);
+      }
+      // Clear param to avoid reopening on re-render.
+      navigation.setParams({ openAddAsset: false, symbol: undefined });
+    }
+  }, [navigation, route?.params?.openAddAsset, route?.params?.symbol, supportedAssets]);
 
   const onRefresh = () => {
     setRefreshing(true);

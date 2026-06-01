@@ -8,11 +8,12 @@ import { COLORS, SPACING, TYPOGRAPHY } from '../../constants/Theme';
 import { apiClient } from '../../api/client';
 import ChatBubble from '../../components/ChatBubble';
 import { CryptofyIcon } from '../../components/icons';
+import type { AiAction } from '../../components/ChatBubble';
 
 const HEADER_EST_HEIGHT = 64;
 
 export default function ChatScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
   const { address } = useAccountStore();
   const [messages, setMessages] = useState<any[]>([]);
   const [input, setInput] = useState('');
@@ -45,6 +46,31 @@ export default function ChatScreen() {
       setMessages(prev => [...prev, { id: `err-${Date.now()}`, text: 'AI service unavailable', isUser: false }]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleAction = (action: AiAction) => {
+    switch (action.type) {
+      case 'RECEIVE':
+        navigation.navigate('Receive');
+        return;
+      case 'SEND':
+        navigation.navigate('Send', action.params || {});
+        return;
+      case 'ADD_ASSET':
+        navigation.navigate('Main', { screen: 'Portfolio', params: { openAddAsset: true, symbol: action.symbol } });
+        return;
+      case 'NAVIGATE':
+        if (action.screen === 'Main') {
+          const tab = (action.params as any)?.tab;
+          const screen = tab === 'Wallets' ? 'Portfolio' : tab === 'Home' ? 'Home' : undefined;
+          navigation.navigate('Main', screen ? { screen } : (action.params || {}));
+          return;
+        }
+        navigation.navigate(action.screen as any, action.params || {});
+        return;
+      default:
+        return;
     }
   };
 
@@ -85,6 +111,7 @@ export default function ChatScreen() {
               isUser={item.isUser}
               insights={item.insights}
               actions={item.actions}
+              onActionPress={handleAction}
             />
           )}
           keyboardShouldPersistTaps="handled"

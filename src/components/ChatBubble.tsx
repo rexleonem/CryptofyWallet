@@ -1,15 +1,31 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { COLORS, SPACING, TYPOGRAPHY } from '../constants/Theme';
+
+export type AiAction =
+  | { type: 'NAVIGATE'; label: string; screen: string; params?: Record<string, any> }
+  | { type: 'ADD_ASSET'; label: string; symbol?: string }
+  | { type: 'SEND'; label: string; params?: { symbol?: string; recipient?: string; amount?: string } }
+  | { type: 'RECEIVE'; label: string };
 
 interface ChatBubbleProps {
   message: string;
   isUser: boolean;
   insights?: string[];
-  actions?: string[];
+  actions?: Array<AiAction | string>;
+  onActionPress?: (action: AiAction) => void;
 }
 
-export default function ChatBubble({ message, isUser, insights, actions }: ChatBubbleProps) {
+export default function ChatBubble({ message, isUser, insights, actions, onActionPress }: ChatBubbleProps) {
+  const normalizedActions: AiAction[] = (actions || [])
+    .map((a: any) => {
+      if (!a) return null;
+      if (typeof a === 'string') return { type: 'NAVIGATE', label: a, screen: 'Main' } as AiAction;
+      if (typeof a === 'object' && typeof a.type === 'string') return a as AiAction;
+      return null;
+    })
+    .filter(Boolean) as AiAction[];
+
   return (
     <View style={[styles.container, isUser ? styles.userContainer : styles.aiContainer]}>
       <View style={[styles.bubble, isUser ? styles.userBubble : styles.aiBubble]}>
@@ -26,13 +42,18 @@ export default function ChatBubble({ message, isUser, insights, actions }: ChatB
           </View>
         )}
 
-        {!isUser && actions && actions.length > 0 && (
+        {!isUser && normalizedActions.length > 0 && (
           <View style={styles.actionSection}>
             <Text style={styles.actionTitle}>Suggestions:</Text>
-            {actions.map((action, i) => (
-              <View key={i} style={styles.actionChip}>
-                <Text style={styles.actionChipText}>{action}</Text>
-              </View>
+            {normalizedActions.map((action, i) => (
+              <TouchableOpacity
+                key={i}
+                style={styles.actionChip}
+                activeOpacity={0.85}
+                onPress={() => onActionPress?.(action)}
+              >
+                <Text style={styles.actionChipText}>{action.label}</Text>
+              </TouchableOpacity>
             ))}
           </View>
         )}
