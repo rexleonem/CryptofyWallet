@@ -121,7 +121,8 @@ export class AiService {
       }, { timeout: 18_000 });
       const data = response.data || {};
       const actions = Array.isArray(data.actions) ? data.actions : [];
-      return { ...data, actions: actions.length ? actions : this.localActions(message) };
+      const structured = actions.length > 0 && typeof actions[0] === 'object' ? actions : [];
+      return { ...data, actions: structured.length ? structured : this.localActions(message) };
     } catch (error) {
       console.error('AI Chat Error:', error.message);
       return {
