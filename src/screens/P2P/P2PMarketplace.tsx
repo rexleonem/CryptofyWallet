@@ -12,7 +12,6 @@ import {
   Alert
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, SPACING, TYPOGRAPHY } from '../../constants/Theme';
 import { fetchP2POffers, P2POffer } from '../../api/p2p';
@@ -25,7 +24,9 @@ const P2PMarketplace = () => {
   const [filter, setFilter] = useState<'BUY' | 'SELL'>('BUY');
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
-  const tabBarHeight = useBottomTabBarHeight();
+  // This screen can be opened from the stack (not always inside a tab navigator),
+  // so we must NOT use `useBottomTabBarHeight()` here (it can crash).
+  const floatingTabBarSpace = 64 + Math.max(insets.bottom, 12) + 18;
 
   useEffect(() => {
     loadOffers();
@@ -162,10 +163,10 @@ const P2PMarketplace = () => {
         <FlatList
           data={Array.isArray(offers) ? offers.filter(o => o?.type === filter) : []}
           renderItem={renderOffer}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item, index) => String((item as any)?.id ?? index)}
           contentContainerStyle={[
             styles.listContent,
-            { paddingBottom: Math.max(tabBarHeight, insets.bottom) + SPACING.xl },
+            { paddingBottom: floatingTabBarSpace + SPACING.xl },
           ]}
           showsVerticalScrollIndicator={false}
           onRefresh={loadOffers}
